@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Upload, X, FileText } from 'lucide-react'
+import { Upload, X, FileText, GripVertical, ArrowUp, ArrowDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface FileUploadProps {
@@ -37,6 +37,16 @@ export default function FileUpload({
 
   const removeFile = (index: number) => {
     const newFiles = uploadedFiles.filter((_, i) => i !== index)
+    setUploadedFiles(newFiles)
+    onFilesSelected(newFiles)
+  }
+
+  const moveFile = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= uploadedFiles.length) return
+    
+    const newFiles = [...uploadedFiles]
+    const [movedFile] = newFiles.splice(fromIndex, 1)
+    newFiles.splice(toIndex, 0, movedFile)
     setUploadedFiles(newFiles)
     onFilesSelected(newFiles)
   }
@@ -93,18 +103,54 @@ export default function FileUpload({
 
       {uploadedFiles.length > 0 && (
         <div className="space-y-2">
-          <h4 className="font-medium text-gray-900">Uploaded Files</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-gray-900">
+              Uploaded Files ({uploadedFiles.length})
+            </h4>
+            {multiple && uploadedFiles.length > 1 && (
+              <p className="text-sm text-gray-500">
+                Files will be merged in this order
+              </p>
+            )}
+          </div>
           {uploadedFiles.map((file, index) => (
-            <Card key={index} className="bg-gray-50/50">
+            <Card key={`${file.name}-${index}`} className="bg-gray-50/50">
               <CardContent className="p-4 flex items-center justify-between">
                 <div className="flex items-center space-x-3">
+                  {multiple && uploadedFiles.length > 1 && (
+                    <div className="flex flex-col space-y-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveFile(index, index - 1)}
+                        disabled={index === 0}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      >
+                        <ArrowUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => moveFile(index, index + 1)}
+                        disabled={index === uploadedFiles.length - 1}
+                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-600"
+                      >
+                        <ArrowDown className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                     <FileText className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900 truncate max-w-xs">
-                      {file.name}
-                    </p>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-medium">
+                        #{index + 1}
+                      </span>
+                      <p className="font-medium text-gray-900 truncate max-w-xs">
+                        {file.name}
+                      </p>
+                    </div>
                     <p className="text-sm text-gray-500">
                       {formatFileSize(file.size)}
                     </p>
@@ -121,6 +167,13 @@ export default function FileUpload({
               </CardContent>
             </Card>
           ))}
+          {multiple && uploadedFiles.length >= 2 && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-700">
+                ✅ Ready to merge! Your PDFs will be combined in the order shown above.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

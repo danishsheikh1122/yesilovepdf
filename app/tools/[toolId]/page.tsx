@@ -208,22 +208,69 @@ export default function ToolPage() {
       setProcessing(true)
       setStatus('processing')
       
-      // Simulate processing with progress
-      const steps = [
-        { progress: 20, text: 'Uploading files...' },
-        { progress: 40, text: 'Analyzing documents...' },
-        { progress: 60, text: 'Processing...' },
-        { progress: 80, text: 'Optimizing output...' },
-        { progress: 100, text: 'Complete!' }
-      ]
+      if (toolId === 'merge') {
+        try {
+          // Upload and process files
+          setProgress(20)
+          
+          const formData = new FormData()
+          selectedFiles.forEach(file => formData.append('files', file))
+          
+          setProgress(40)
+          
+          const response = await fetch('/api/merge', {
+            method: 'POST',
+            body: formData,
+          })
+          
+          setProgress(60)
+          
+          if (!response.ok) {
+            const errorData = await response.json()
+            throw new Error(errorData.error || 'Failed to merge PDFs')
+          }
+          
+          setProgress(80)
+          
+          // Download the merged file
+          const blob = await response.blob()
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = 'merged-document.pdf'
+          a.click()
+          
+          setProgress(100)
+          setStatus('complete')
+          setProcessing(false)
+          
+          // Clean up
+          URL.revokeObjectURL(url)
+        } catch (error) {
+          console.error('Merge error:', error)
+          alert(error instanceof Error ? error.message : 'Failed to merge PDFs. Please try again.')
+          setProcessing(false)
+          setStatus('idle')
+          setProgress(0)
+        }
+      } else {
+        // Simulate processing with progress for other tools
+        const steps = [
+          { progress: 20, text: 'Uploading files...' },
+          { progress: 40, text: 'Analyzing documents...' },
+          { progress: 60, text: 'Processing...' },
+          { progress: 80, text: 'Optimizing output...' },
+          { progress: 100, text: 'Complete!' }
+        ]
 
-      for (const step of steps) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setProgress(step.progress)
+        for (const step of steps) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          setProgress(step.progress)
+        }
+
+        setStatus('complete')
+        setProcessing(false)
       }
-
-      setStatus('complete')
-      setProcessing(false)
     }
   }
 
@@ -367,6 +414,31 @@ export default function ToolPage() {
           {/* Options & Process Section */}
           <div className="space-y-6">
             {/* Tool-specific options */}
+            {toolId === 'merge' && selectedFiles.length > 0 && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">Merge Options</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-700">
+                      <strong>Files to merge:</strong> {selectedFiles.length}
+                    </p>
+                    <p className="text-sm text-blue-600 mt-1">
+                      PDFs will be combined in the order shown in the file list. You can reorder them using the arrow buttons.
+                    </p>
+                  </div>
+                  {selectedFiles.length >= 2 && (
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-sm text-green-700">
+                        ✅ Ready to merge! Click the button below to combine your PDFs.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
             {toolId === 'compress' && (
               <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
                 <CardHeader>

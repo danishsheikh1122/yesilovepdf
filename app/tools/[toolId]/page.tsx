@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress'
 import { ArrowLeft, Download, CheckCircle, Home, RotateCcw } from 'lucide-react'
 import FileUpload from '@/components/FileUpload'
+import PdfGallery from '@/components/PdfGallery'
+import EnhancedMerge from '@/components/EnhancedMergeNew'
 
 const toolConfig: Record<string, any> = {
   merge: {
@@ -189,8 +191,14 @@ export default function ToolPage() {
   const [progress, setProgress] = useState(0)
   const [status, setStatus] = useState<'idle' | 'processing' | 'complete'>('idle')
   const [options, setOptions] = useState<Record<string, any>>({})
+  const [selectedPages, setSelectedPages] = useState<number[]>([])
 
   const tool = toolConfig[toolId]
+
+  // Clear selected pages when files change
+  useEffect(() => {
+    setSelectedPages([])
+  }, [selectedFiles])
 
   if (!tool) {
     return (
@@ -208,69 +216,159 @@ export default function ToolPage() {
       setProcessing(true)
       setStatus('processing')
       
-      if (toolId === 'merge') {
-        try {
-          // Upload and process files
-          setProgress(20)
-          
-          const formData = new FormData()
-          selectedFiles.forEach(file => formData.append('files', file))
-          
-          setProgress(40)
-          
-          const response = await fetch('/api/merge', {
-            method: 'POST',
-            body: formData,
-          })
-          
-          setProgress(60)
-          
-          if (!response.ok) {
-            const errorData = await response.json()
-            throw new Error(errorData.error || 'Failed to merge PDFs')
+      try {
+        setProgress(20)
+        
+        const formData = new FormData()
+        selectedFiles.forEach(file => formData.append('files', file))
+        
+        // Add tool-specific options
+        Object.keys(options).forEach(key => {
+          formData.append(key, options[key])
+        })
+        
+        // Add selected pages for tools that need them
+        if ((toolId === 'remove-pages' || toolId === 'extract-pages') && selectedPages.length > 0) {
+          const pagesString = selectedPages.sort((a, b) => a - b).join(',')
+          formData.append(
+            toolId === 'remove-pages' ? 'pagesToRemove' : 'pagesToExtract', 
+            pagesString
+          )
+        }
+        
+        setProgress(40)
+        
+        const response = await fetch(`/api/${toolId}`, {
+          method: 'POST',
+          body: formData,
+        })
+        
+        setProgress(60)
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || `Failed to process ${tool.title}`)
+        }
+        
+        setProgress(80)
+        
+        // Download the result file
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        
+        // Set appropriate filename based on tool and content type
+        const contentType = response.headers.get('content-type')
+        const contentDisposition = response.headers.get('content-disposition')
+        
+        let filename = 'result'
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/)
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1].replace(/['"]/g, '')
           }
-          
-          setProgress(80)
-          
-          // Download the merged file
-          const blob = await response.blob()
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = 'merged-document.pdf'
-          a.click()
-          
-          setProgress(100)
-          setStatus('complete')
-          setProcessing(false)
-          
-          // Clean up
-          URL.revokeObjectURL(url)
-        } catch (error) {
-          console.error('Merge error:', error)
-          alert(error instanceof Error ? error.message : 'Failed to merge PDFs. Please try again.')
-          setProcessing(false)
-          setStatus('idle')
-          setProgress(0)
+        } else {
+          // Default filenames based on tool
+          switch (toolId) {
+            case 'merge':
+              filename = 'merged-document.pdf'
+              break
+            case 'split':
+              filename = 'split-pages.zip'
+              break
+            case 'compress':
+              filename = `compressed-${selectedFiles[0]?.name || 'document.pdf'}`
+              break
+            case 'jpg-to-pdf':
+              filename = 'images-to-pdf.pdf'
+              break
+            case 'pdf-to-jpg':
+              filename = contentType?.includes('zip') ? 'pdf-images.zip' : 'page-1.jpg'
+              break
+            case 'rotate':
+              filename = `rotated-${selectedFiles[0]?.name || 'document.pdf'}`
+              break
+            case 'remove-pages':
+              filename = `removed-pages-${selectedFiles[0]?.name || 'document.pdf'}`
+              break
+            case 'extract-pages':
+              filename = `extracted-pages-${selectedFiles[0]?.name || 'document.pdf'}`
+              break
+            default:
+              filename = `processed-${selectedFiles[0]?.name || 'document'}`
+          }
         }
-      } else {
-        // Simulate processing with progress for other tools
-        const steps = [
-          { progress: 20, text: 'Uploading files...' },
-          { progress: 40, text: 'Analyzing documents...' },
-          { progress: 60, text: 'Processing...' },
-          { progress: 80, text: 'Optimizing output...' },
-          { progress: 100, text: 'Complete!' }
-        ]
-
-        for (const step of steps) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
-          setProgress(step.progress)
-        }
-
+        
+        a.download = filename
+        a.click()
+        
+        setProgress(100)
         setStatus('complete')
         setProcessing(false)
+        
+        // Clean up
+        URL.revokeObjectURL(url)
+      } catch (error) {
+        console.error(`${toolId} error:`, error)
+        alert(error instanceof Error ? error.message : `Failed to process ${tool.title}. Please try again.`)
+        setProcessing(false)
+        setStatus('idle')
+        setProgress(0)
       }
+    }
+  }
+
+  const handleEnhancedMerge = async (files: File[], excludedPages: number[]) => {
+    setProcessing(true)
+    setStatus('processing')
+    
+    try {
+      setProgress(20)
+      
+      const formData = new FormData()
+      files.forEach(file => formData.append('files', file))
+      
+      if (excludedPages.length > 0) {
+        formData.append('excludedPages', excludedPages.join(','))
+      }
+      
+      setProgress(40)
+      
+      const response = await fetch('/api/merge', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      setProgress(60)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to merge PDFs')
+      }
+      
+      setProgress(80)
+      
+      // Download the merged file
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'merged-document.pdf'
+      a.click()
+      
+      setProgress(100)
+      setStatus('complete')
+      setProcessing(false)
+      
+      // Clean up
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Enhanced merge error:', error)
+      alert(error instanceof Error ? error.message : 'Failed to merge PDFs. Please try again.')
+      setProcessing(false)
+      setStatus('idle')
+      setProgress(0)
     }
   }
 
@@ -278,6 +376,7 @@ export default function ToolPage() {
     setStatus('idle')
     setProgress(0)
     setSelectedFiles([])
+    setSelectedPages([])
     setOptions({})
   }
 
@@ -391,9 +490,15 @@ export default function ToolPage() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* File Upload Section */}
-          <div className="lg:col-span-2">
+        {toolId === 'merge' ? (
+          <EnhancedMerge
+            onMerge={handleEnhancedMerge}
+            processing={processing}
+          />
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* File Upload Section */}
+            <div className="lg:col-span-2">
             <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg">
@@ -407,6 +512,42 @@ export default function ToolPage() {
                   multiple={tool.multiple}
                   maxFiles={tool.multiple ? 10 : 1}
                 />
+                
+                {/* PDF Preview for single PDF tools */}
+                {selectedFiles.length > 0 && !tool.multiple && selectedFiles[0].type === 'application/pdf' && (
+                  <div className="mt-6">
+                    <PdfGallery
+                      file={selectedFiles[0]}
+                      selectionMode={
+                        toolId === 'remove-pages' ? 'exclude' :
+                        toolId === 'extract-pages' ? 'include' : 'view'
+                      }
+                      selectedPages={selectedPages}
+                      onPagesSelected={setSelectedPages}
+                    />
+                  </div>
+                )}
+                
+                {/* PDF Preview for merge tool */}
+                {toolId === 'merge' && selectedFiles.length > 0 && (
+                  <div className="mt-6 space-y-4">
+                    <h4 className="font-medium text-gray-900">PDF Previews</h4>
+                    {selectedFiles.map((file, index) => (
+                      file.type === 'application/pdf' && (
+                        <div key={`${file.name}-${index}`} className="border rounded-lg p-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">
+                            File {index + 1}: {file.name}
+                          </h5>
+                          <PdfGallery
+                            file={file}
+                            selectionMode="view"
+                            className="border-0 shadow-none bg-transparent"
+                          />
+                        </div>
+                      )
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -414,25 +555,39 @@ export default function ToolPage() {
           {/* Options & Process Section */}
           <div className="space-y-6">
             {/* Tool-specific options */}
-            {toolId === 'merge' && selectedFiles.length > 0 && (
+
+            {toolId === 'split' && (
               <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
                 <CardHeader>
-                  <CardTitle className="text-lg">Merge Options</CardTitle>
+                  <CardTitle className="text-lg">Split Options</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-700">
-                      <strong>Files to merge:</strong> {selectedFiles.length}
-                    </p>
-                    <p className="text-sm text-blue-600 mt-1">
-                      PDFs will be combined in the order shown in the file list. You can reorder them using the arrow buttons.
-                    </p>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Split Method</label>
+                    <Select 
+                      value={options.splitOption || 'all-pages'} 
+                      onValueChange={(value: string) => setOptions({...options, splitOption: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all-pages">Split into individual pages</SelectItem>
+                        <SelectItem value="custom-range">Custom page range</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {selectedFiles.length >= 2 && (
-                    <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-700">
-                        ✅ Ready to merge! Click the button below to combine your PDFs.
-                      </p>
+                  {options.splitOption === 'custom-range' && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">Page Range</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., 1-5,7,9-12"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={options.pageRange || ''}
+                        onChange={(e) => setOptions({...options, pageRange: e.target.value})}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Use commas and hyphens (e.g., 1-5,7,9-12)</p>
                     </div>
                   )}
                 </CardContent>
@@ -440,6 +595,242 @@ export default function ToolPage() {
             )}
             
             {toolId === 'compress' && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">Compression Level</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Select 
+                    value={options.compressionLevel || 'basic'} 
+                    onValueChange={(value: string) => setOptions({...options, compressionLevel: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">Basic (Recommended)</SelectItem>
+                      <SelectItem value="strong">Strong Compression</SelectItem>
+                      <SelectItem value="extreme">Maximum Compression</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
+
+            {toolId === 'jpg-to-pdf' && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">PDF Options</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Page Size</label>
+                    <Select 
+                      value={options.pageSize || 'a4'} 
+                      onValueChange={(value: string) => setOptions({...options, pageSize: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="a4">A4</SelectItem>
+                        <SelectItem value="letter">Letter</SelectItem>
+                        <SelectItem value="legal">Legal</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Orientation</label>
+                    <Select 
+                      value={options.orientation || 'portrait'} 
+                      onValueChange={(value: string) => setOptions({...options, orientation: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="portrait">Portrait</SelectItem>
+                        <SelectItem value="landscape">Landscape</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {toolId === 'pdf-to-jpg' && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">Image Options</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Format</label>
+                    <Select 
+                      value={options.format || 'jpeg'} 
+                      onValueChange={(value: string) => setOptions({...options, format: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="jpeg">JPEG</SelectItem>
+                        <SelectItem value="png">PNG</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Quality</label>
+                    <Select 
+                      value={options.quality || '85'} 
+                      onValueChange={(value: string) => setOptions({...options, quality: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="60">Low (60%)</SelectItem>
+                        <SelectItem value="85">Medium (85%)</SelectItem>
+                        <SelectItem value="95">High (95%)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {toolId === 'rotate' && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">Rotation Options</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Rotation</label>
+                    <Select 
+                      value={options.rotation || '90'} 
+                      onValueChange={(value: string) => setOptions({...options, rotation: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="90">90° Clockwise</SelectItem>
+                        <SelectItem value="180">180°</SelectItem>
+                        <SelectItem value="270">90° Counter-clockwise</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Pages</label>
+                    <Select 
+                      value={options.pages || 'all'} 
+                      onValueChange={(value: string) => setOptions({...options, pages: value})}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Pages</SelectItem>
+                        <SelectItem value="odd">Odd Pages</SelectItem>
+                        <SelectItem value="even">Even Pages</SelectItem>
+                        <SelectItem value="custom">Custom Range</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {options.pages === 'custom' && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-2 block">Page Range</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., 1,3,5-8"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={options.customPages || ''}
+                        onChange={(e) => setOptions({...options, pages: e.target.value})}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {(toolId === 'remove-pages' || toolId === 'extract-pages') && selectedFiles.length > 0 && (
+              <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg">
+                    {toolId === 'remove-pages' ? 'Pages to Remove' : 'Pages to Extract'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {selectedPages.length > 0 ? (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700">
+                          <strong>Selected pages:</strong> {selectedPages.sort((a, b) => a - b).join(', ')}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {toolId === 'remove-pages' 
+                            ? 'These pages will be removed from the PDF' 
+                            : 'Only these pages will be kept in the new PDF'
+                          }
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-700">
+                          👆 Click on pages in the preview above to select them
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Fallback text input for manual entry */}
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
+                        Or enter page numbers manually
+                      </summary>
+                      <div className="mt-2">
+                        <input
+                          type="text"
+                          placeholder="e.g., 1,3,5-8"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={selectedPages.join(',')}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            if (value) {
+                              // Parse manual input
+                              const pages: number[] = []
+                              const ranges = value.split(',').map(range => range.trim())
+                              
+                              for (const range of ranges) {
+                                if (range.includes('-')) {
+                                  const [start, end] = range.split('-').map(num => parseInt(num.trim()))
+                                  if (!isNaN(start) && !isNaN(end) && start <= end) {
+                                    for (let i = start; i <= end; i++) {
+                                      if (i > 0) pages.push(i)
+                                    }
+                                  }
+                                } else {
+                                  const pageNum = parseInt(range)
+                                  if (!isNaN(pageNum) && pageNum > 0) {
+                                    pages.push(pageNum)
+                                  }
+                                }
+                              }
+                              setSelectedPages([...new Set(pages)].sort((a, b) => a - b))
+                            } else {
+                              setSelectedPages([])
+                            }
+                          }}
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Use commas and hyphens (e.g., 1,3,5-8)</p>
+                      </div>
+                    </details>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {toolId === 'rotate' && (
               <Card className="bg-white/90 backdrop-blur-sm shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg">Compression Level</CardTitle>
@@ -490,7 +881,10 @@ export default function ToolPage() {
               <CardContent className="p-6">
                 <Button 
                   onClick={handleProcess}
-                  disabled={selectedFiles.length < tool.minFiles}
+                  disabled={
+                    selectedFiles.length < tool.minFiles ||
+                    ((toolId === 'remove-pages' || toolId === 'extract-pages') && selectedPages.length === 0)
+                  }
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 text-lg font-semibold"
                   size="lg"
                 >
@@ -503,6 +897,14 @@ export default function ToolPage() {
                       ? `Please upload at least ${tool.minFiles} files`
                       : 'Please upload a file to continue'
                     }
+                  </p>
+                )}
+                
+                {selectedFiles.length >= tool.minFiles && 
+                 (toolId === 'remove-pages' || toolId === 'extract-pages') && 
+                 selectedPages.length === 0 && (
+                  <p className="text-sm text-orange-600 text-center mt-2">
+                    Please select pages to {toolId === 'remove-pages' ? 'remove' : 'extract'}
                   </p>
                 )}
               </CardContent>
@@ -522,6 +924,7 @@ export default function ToolPage() {
             </Card>
           </div>
         </div>
+        )}
       </div>
     </div>
   )

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import PDFMerger from 'pdf-merger-js';
+import { PDFDocument } from 'pdf-lib';
 import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 import os from 'os';
@@ -8,10 +9,11 @@ export async function POST(request) {
   try {
     const formData = await request.formData();
     const files = formData.getAll('files');
+    const excludedPages = formData.get('excludedPages'); // Comma-separated list of global page indices to exclude
 
-    if (!files || files.length < 2) {
+    if (!files || files.length < 1) {
       return NextResponse.json({ 
-        error: 'Please upload at least 2 PDF files to merge.' 
+        error: 'Please upload at least 1 PDF file to merge.' 
       }, { status: 400 });
     }
 
@@ -24,49 +26,94 @@ export async function POST(request) {
       }
     }
 
-    const merger = new PDFMerger();
     const tempPaths = [];
+    let excludedPagesArray = [];
+    
+    if (excludedPages) {
+      excludedPagesArray = excludedPages.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+    }
 
     try {
-      // Save each uploaded file temporarily
-      for (const file of files) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const tempPath = path.join(os.tmpdir(), `${Date.now()}_${sanitizedFileName}`);
-        await writeFile(tempPath, buffer);
-        tempPaths.push(tempPath);
-        await merger.add(tempPath);
-      }
+      // If we have excluded pages, we need to use pdf-lib for more control
+      if (excludedPagesArray.length > 0) {
+        const finalDoc = await PDFDocument.create();
+        let globalPageIndex = 0;
 
-      // Save merged PDF
-      const mergedPath = path.join(os.tmpdir(), `merged_${Date.now()}.pdf`);
-      await merger.save(mergedPath);
+        // Process each file
+        for (const file of files) {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const pdfDoc = await PDFDocument.load(buffer);
+          const pageCount = pdfDoc.getPageCount();
 
-      // Read merged file and return it
-      const mergedBuffer = await (await import('fs')).promises.readFile(mergedPath);
+          // Get pages to include from this file
+          const pagesToInclude = [];
+          for (let i = 0; i < pageCount; i++) {
+            if (!excludedPagesArray.includes(globalPageIndex)) {
+              pagesToInclude.push(i);
+            }
+            globalPageIndex++;
+          }
 
-      // Clean up temp files
-      for (const temp of tempPaths) {
-        try {
-          await unlink(temp);
-        } catch (unlinkError) {
-          console.warn('Failed to delete temp file:', temp, unlinkError);
+          // Copy included pages
+          if (pagesToInclude.length > 0) {
+            const copiedPages = await finalDoc.copyPages(pdfDoc, pagesToInclude);
+            copiedPages.forEach(page => finalDoc.addPage(page));
+          }
         }
-      }
-      
-      try {
-        await unlink(mergedPath);
-      } catch (unlinkError) {
-        console.warn('Failed to delete merged temp file:', mergedPath, unlinkError);
-      }
 
-      return new Response(mergedBuffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': 'attachment; filename="merged-document.pdf"',
-          'Content-Length': mergedBuffer.length.toString(),
-        },
-      });
+        const mergedBytes = await finalDoc.save();
+
+        return new Response(mergedBytes, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="merged-document.pdf"',
+            'Content-Length': mergedBytes.length.toString(),
+          },
+        });
+      } else {
+        // Use the faster pdf-merger-js for simple merging without exclusions
+        const merger = new PDFMerger();
+
+        // Save each uploaded file temporarily and add to merger
+        for (const file of files) {
+          const buffer = Buffer.from(await file.arrayBuffer());
+          const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const tempPath = path.join(os.tmpdir(), `${Date.now()}_${sanitizedFileName}`);
+          await writeFile(tempPath, buffer);
+          tempPaths.push(tempPath);
+          await merger.add(tempPath);
+        }
+
+        // Save merged PDF
+        const mergedPath = path.join(os.tmpdir(), `merged_${Date.now()}.pdf`);
+        await merger.save(mergedPath);
+
+        // Read merged file and return it
+        const mergedBuffer = await (await import('fs')).promises.readFile(mergedPath);
+
+        // Clean up temp files
+        for (const temp of tempPaths) {
+          try {
+            await unlink(temp);
+          } catch (unlinkError) {
+            console.warn('Failed to delete temp file:', temp, unlinkError);
+          }
+        }
+        
+        try {
+          await unlink(mergedPath);
+        } catch (unlinkError) {
+          console.warn('Failed to delete merged temp file:', mergedPath, unlinkError);
+        }
+
+        return new Response(mergedBuffer, {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="merged-document.pdf"',
+            'Content-Length': mergedBuffer.length.toString(),
+          },
+        });
+      }
     } catch (processingError) {
       // Clean up temp files in case of error
       for (const temp of tempPaths) {

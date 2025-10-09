@@ -162,20 +162,21 @@ export default function PdfGallery({
         )}
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      <CardContent className="pt-0 px-4 sm:px-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 sm:gap-6 justify-items-center auto-rows-max">
           {Array.from({ length: pageCount }, (_, index) => {
             const pageNumber = index + 1
             return (
-              <PdfThumbnail
-                key={pageNumber}
-                file={file}
-                pageNumber={pageNumber}
-                isSelected={isPageSelected(pageNumber)}
-                onToggleSelect={() => handlePageToggle(pageNumber)}
-                selectionMode={selectionMode}
-                size="md"
-              />
+              <div key={pageNumber} className="flex flex-col items-center space-y-2 w-full max-w-fit">
+                <PdfThumbnail
+                  file={file}
+                  pageNumber={pageNumber}
+                  isSelected={isPageSelected(pageNumber)}
+                  onToggleSelect={() => handlePageToggle(pageNumber)}
+                  selectionMode={selectionMode}
+                  size="sm"
+                />
+              </div>
             )
           })}
         </div>

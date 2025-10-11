@@ -358,6 +358,16 @@ export default function ToolPage() {
                 ? "pdf-images.zip"
                 : "page-1.jpg";
               break;
+            case "pdf-to-word":
+              filename = `${
+                selectedFiles[0]?.name?.replace('.pdf', '') || "document"
+              }.docx`;
+              break;
+            case "pdf-to-powerpoint":
+              filename = `${
+                selectedFiles[0]?.name?.replace('.pdf', '') || "presentation"
+              }.pptx`;
+              break;
             case "rotate":
               filename = `rotated-${selectedFiles[0]?.name || "document.pdf"}`;
               break;

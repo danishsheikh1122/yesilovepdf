@@ -28,6 +28,7 @@ import PdfGallery from "@/components/PdfGallery";
 import EnhancedMerge from "@/components/EnhancedMergeNew";
 import PdfOrganizer from "@/components/PdfOrganizer";
 import ImageOrganizer from "@/components/ImageOrganizer";
+import SimplePdfEditor from "@/components/SimplePdfEditor";
 
 const toolConfig: Record<string, any> = {
   merge: {
@@ -223,6 +224,29 @@ export default function ToolPage() {
 
   const tool = toolConfig[toolId];
 
+  // Special case for edit tool - show PDF editor
+  if (toolId === 'edit') {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="container mx-auto py-8">
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Button>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm">
+            <SimplePdfEditor />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Helper function to format file sizes
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -249,6 +273,8 @@ export default function ToolPage() {
       </div>
     );
   }
+
+
 
   const handleProcess = async () => {
     if (selectedFiles.length >= tool.minFiles) {

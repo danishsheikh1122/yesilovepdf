@@ -32,7 +32,7 @@ export async function POST(request) {
     for (const file of files) {
       if (!allowedTypes.includes(file.type)) {
         return NextResponse.json({ 
-          error: 'All files must be valid image files (JPG, PNG, WebP, TIFF).'
+          error: 'All files must be valid image files (JPG, PNG, WebP, TIFF).' 
         }, { status: 400 });
       }
     }
@@ -109,7 +109,7 @@ export async function POST(request) {
       return new Response(pdfBytes, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': 'attachment; filename="images-to-pdf.pdf"',
+          'Content-Disposition': 'attachment; filename="scanned-document.pdf"',
           'Content-Length': pdfBytes.length.toString(),
         },
       });
@@ -118,7 +118,7 @@ export async function POST(request) {
       throw processingError;
     }
   } catch (error) {
-    console.error('Image to PDF conversion error:', error);
+    console.error('Scan to PDF conversion error:', error);
     
     if (error.message && error.message.includes('Invalid image')) {
       return NextResponse.json({ 

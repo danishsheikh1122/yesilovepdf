@@ -193,14 +193,6 @@ export default function HomePage() {
       gradient: "bg-gradient-to-br from-green-600 to-green-800",
       href: "/tools/pdf-to-excel",
     },
-    {
-      id: "pdf-to-pdfa",
-      title: "PDF to PDF/A",
-      description: "Convert PDF to archival PDF/A format for long-term storage",
-      icon: <Shield className="w-8 h-8 text-white" />,
-      gradient: "bg-gradient-to-br from-gray-500 to-gray-700",
-      href: "/tools/pdf-to-pdfa",
-    },
   ];
 
   const editTools = [

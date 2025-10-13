@@ -24,7 +24,6 @@ PDF to JPG - Convert PDF pages to high-quality images
 PDF to WORD - Convert PDFs to editable Word format
 PDF to PowerPoint - Convert PDFs to PowerPoint presentations
 PDF to Excel - Extract data to Excel format
-PDF to PDF/A - Convert to archival PDF/A format
 ✏️ Edit PDF
 Rotate PDF - Rotate PDF pages to correct orientation
 Add Page Numbers - Add customizable page numbers

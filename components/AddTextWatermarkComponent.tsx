@@ -297,10 +297,10 @@ export default function AddTextWatermarkComponent({
             {files.length > 0 && (
               <Card>
                 <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-900">{files[0].name}</p>
+                  <div className="flex items-start gap-3">
+                    <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 break-words break-all">{files[0].name}</p>
                       <p className="text-sm text-gray-500">
                         {(files[0].size / 1024 / 1024).toFixed(2)} MB • Est. {totalPages} pages
                       </p>

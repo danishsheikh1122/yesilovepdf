@@ -175,9 +175,9 @@ export default function AddPageNumbersComponent({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Live PDF Preview Panel */}
-        <div className="xl:col-span-2">
+        <div className="lg:col-span-3">
           <Card className="h-full">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2">
@@ -186,7 +186,7 @@ export default function AddPageNumbersComponent({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden max-w-lg mx-auto">
+              <div className="relative bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden w-full">
                 {files.length === 0 ? (
                   /* Sample Preview when no file */
                   <div className="aspect-[8.5/11] p-6 text-gray-800">
@@ -229,7 +229,8 @@ export default function AddPageNumbersComponent({
                       <div className="relative bg-white border rounded-lg overflow-hidden">
                         <iframe
                           src={`${pdfPreviewUrl}#page=1&view=FitH`}
-                          className="w-full h-96 border-0"
+                          className="w-full border-0"
+                          style={{ height: '600px', minHeight: '600px' }}
                           title="PDF Preview"
                         />
                         
@@ -239,8 +240,8 @@ export default function AddPageNumbersComponent({
                         </div>
                         
                         {/* File info indicator */}
-                        <div className="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-90 px-2 py-1 rounded shadow">
-                          {files[0].name} • First Page Preview
+                        <div className="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-90 px-2 py-1 rounded shadow max-w-xs break-words">
+                          <span className="break-all">{files[0].name}</span> • First Page Preview
                         </div>
                       </div>
                     ) : (
@@ -250,7 +251,7 @@ export default function AddPageNumbersComponent({
                           <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                             <FileText className="w-6 h-6 text-red-600" />
                           </div>
-                          <h1 className="text-lg font-bold text-gray-900 mb-1">
+                          <h1 className="text-lg font-bold text-gray-900 mb-1 break-words break-all px-2">
                             {files[0].name.replace(/\.pdf$/i, '')}
                           </h1>
                           <p className="text-sm text-gray-600">
@@ -283,7 +284,7 @@ export default function AddPageNumbersComponent({
         </div>
 
         {/* Options Panel */}
-        <div className="space-y-4">
+        <div className="lg:col-span-2 space-y-4">
           {/* Position Settings */}
           <Card>
             <CardHeader className="pb-3">

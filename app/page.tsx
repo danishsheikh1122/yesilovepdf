@@ -237,12 +237,12 @@ export default function HomePage() {
       href: "/tools/crop",
     },
     {
-      id: "edit",
+      id: "edit-pdf",
       title: "Edit PDF",
-      description: "Edit text, images, and other elements in your PDF",
+      description: "Advanced PDF editor with text, shapes, annotations, and inline editing",
       icon: <Edit className="w-8 h-8 text-white" />,
       gradient: "bg-gradient-to-br from-rose-400 to-rose-600",
-      href: "/tools/edit",
+      href: "/tools/edit-pdf",
     },
   ];
 

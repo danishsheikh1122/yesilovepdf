@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
+import { Slider } from "@/components/ui/slider";
 import {
   ArrowLeft,
   Download,
@@ -28,6 +29,7 @@ import PdfGallery from "@/components/PdfGallery";
 import EnhancedMerge from "@/components/EnhancedMergeNew";
 import PdfOrganizer from "@/components/PdfOrganizer";
 import ImageOrganizer from "@/components/ImageOrganizer";
+import SimplePdfEditor from "@/components/SimplePdfEditor";
 
 const toolConfig: Record<string, any> = {
   merge: {
@@ -223,6 +225,29 @@ export default function ToolPage() {
 
   const tool = toolConfig[toolId];
 
+  // Special case for edit tool - show PDF editor
+  if (toolId === 'edit') {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="container mx-auto py-8">
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={() => router.push("/")}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Home
+            </Button>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm">
+            <SimplePdfEditor />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Helper function to format file sizes
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -237,6 +262,13 @@ export default function ToolPage() {
     setSelectedPages([]);
   }, [selectedFiles]);
 
+  // Initialize quality option for pdf-to-jpg
+  useEffect(() => {
+    if (toolId === 'pdf-to-jpg' && !options.quality) {
+      setOptions(prev => ({ ...prev, quality: 75 }));
+    }
+  }, [toolId, options.quality]);
+
   if (!tool) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -249,6 +281,8 @@ export default function ToolPage() {
       </div>
     );
   }
+
+
 
   const handleProcess = async () => {
     if (selectedFiles.length >= tool.minFiles) {
@@ -955,6 +989,64 @@ export default function ToolPage() {
                     )}
                   </Card>
                 ))}
+                {/* Image Quality Control (only for pdf-to-jpg) */}
+                {toolId === 'pdf-to-jpg' && (
+                  <Card className="p-6 border-2 border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                        Image Quality
+                      </h3>
+                      
+                      <div className="grid grid-cols-3 gap-3">
+                        <button
+                          onClick={() => setOptions(prev => ({ ...prev, quality: 50 }))}
+                          className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                            options.quality === 50
+                              ? 'border-blue-500 bg-blue-500 text-white shadow-lg'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="font-semibold text-lg">Standard</div>
+                            <div className="text-sm opacity-80">Smaller files</div>
+                          </div>
+                        </button>
+                        
+                        <button
+                          onClick={() => setOptions(prev => ({ ...prev, quality: 75 }))}
+                          className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                            options.quality === 75
+                              ? 'border-blue-500 bg-blue-500 text-white shadow-lg'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="font-semibold text-lg">High</div>
+                            <div className="text-sm opacity-80">Recommended</div>
+                          </div>
+                        </button>
+                        
+                        <button
+                          onClick={() => setOptions(prev => ({ ...prev, quality: 100 }))}
+                          className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                            options.quality === 100
+                              ? 'border-blue-500 bg-blue-500 text-white shadow-lg'
+                              : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                          }`}
+                        >
+                          <div className="text-center">
+                            <div className="font-semibold text-lg">Maximum</div>
+                            <div className="text-sm opacity-80">Best quality</div>
+                          </div>
+                        </button>
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 text-center mt-4">
+                        Choose the quality that best fits your needs. Higher quality produces sharper images but larger file sizes.
+                      </p>
+                    </div>
+                  </Card>
+                )}
               </div>
             )}
 

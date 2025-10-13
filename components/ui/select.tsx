@@ -17,14 +17,17 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm hover:border-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "flex h-11 w-full items-center justify-between rounded-md border bg-white px-3 text-sm text-gray-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      // Visual tokens: use CSS variables defined in `globals.css` for consistent theme
+      "border-[color:var(--border)] hover:border-[color:var(--destructive)]",
+      "focus:outline-none focus:ring-2 focus:ring-[color:rgba(220,38,38,0.15)] focus:border-[color:var(--destructive)]",
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown className="h-4 w-4 opacity-50" />
+      <ChevronDown className="h-4 w-4 text-muted/70" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ))
@@ -116,14 +119,16 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-2.5 pl-8 pr-2 text-sm text-gray-900 outline-none hover:bg-gray-100 focus:bg-gray-100 data-[state=checked]:bg-red-50 data-[state=checked]:text-red-900 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-2.5 pl-8 pr-2 text-sm text-gray-900 outline-none hover:bg-gray-50 focus:bg-gray-50 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      // Checked/active visual
+      "data-[state=checked]:bg-[color:var(--destructive)] data-[state=checked]:text-[color:var(--destructive-foreground)]",
       className
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+    <span className="absolute left-2 top-1/2 -translate-y-1/2 flex h-4 w-4 items-center justify-center">
       <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-red-600" />
+        <Check className="h-3.5 w-3.5 text-[color:var(--destructive)]" />
       </SelectPrimitive.ItemIndicator>
     </span>
 

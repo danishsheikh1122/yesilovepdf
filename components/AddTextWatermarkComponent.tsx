@@ -178,9 +178,9 @@ export default function AddTextWatermarkComponent({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Preview Section */}
-          <div className="space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -242,12 +242,12 @@ export default function AddTextWatermarkComponent({
                       </div>
                     ) : pdfPreviewUrl ? (
                       /* Real PDF Preview with Watermark Overlay */
-                      <div className="relative bg-white border shadow-sm rounded-lg overflow-hidden mx-auto" 
-                           style={{ width: `${400 * previewScale}px`, maxWidth: '100%' }}>
+                      <div className="relative bg-white border shadow-sm rounded-lg overflow-hidden" 
+                           style={{ width: `${600 * previewScale}px`, maxWidth: '100%', margin: '0 auto' }}>
                         <iframe
                           src={`${pdfPreviewUrl}#page=1&view=FitH`}
                           className="w-full border-0"
-                          style={{ height: `${550 * previewScale}px` }}
+                          style={{ height: `${700 * previewScale}px` }}
                           title="PDF Preview with Watermark"
                         />
                         
@@ -261,8 +261,8 @@ export default function AddTextWatermarkComponent({
                       </div>
                     ) : (
                       /* Fallback preview */
-                      <div className="relative bg-white border shadow-sm rounded-lg overflow-hidden mx-auto p-6"
-                           style={{ width: `${400 * previewScale}px`, height: `${550 * previewScale}px`, maxWidth: '100%' }}>
+                      <div className="relative bg-white border shadow-sm rounded-lg overflow-hidden p-6"
+                           style={{ width: `${600 * previewScale}px`, height: `${700 * previewScale}px`, maxWidth: '100%', margin: '0 auto' }}>
                         <div className="text-center mb-6">
                           <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                             <FileText className="w-6 h-6 text-blue-600" />
@@ -312,7 +312,7 @@ export default function AddTextWatermarkComponent({
           </div>
 
           {/* Settings Section */}
-          <div className="space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             {/* Watermark Style Selection */}
             <Card>
               <CardHeader>

@@ -8,6 +8,7 @@ import { Slider } from '@/components/ui/slider'
 
 import { Download, Eye, Settings, FileText, CheckCircle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
+// Simple file info display without PDF.js to avoid build issues
 
 interface AddPageNumbersProps {
   files: File[]
@@ -31,6 +32,8 @@ export default function AddPageNumbersComponent({
   })
 
   const [showSuccess, setShowSuccess] = useState(false)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
 
   const positions = [
     { value: 'top-left', label: 'Top Left', icon: '↖' },
@@ -71,6 +74,48 @@ export default function AddPageNumbersComponent({
     return options.format
       .replace('{page}', pageNum.toString())
       .replace('{total}', totalPages.toString())
+  }
+
+  // Load PDF preview when files change
+  useEffect(() => {
+    if (files.length > 0) {
+      loadPdfPreview()
+    } else {
+      setPdfPreviewUrl(null)
+    }
+    
+    // Cleanup URL when component unmounts
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl)
+      }
+    }
+  }, [files])
+  
+  // Cleanup URL when preview URL changes
+  useEffect(() => {
+    return () => {
+      if (pdfPreviewUrl) {
+        URL.revokeObjectURL(pdfPreviewUrl)
+      }
+    }
+  }, [pdfPreviewUrl])
+
+  const loadPdfPreview = async () => {
+    if (files.length === 0) return
+    
+    setPreviewLoading(true)
+    
+    try {
+      const file = files[0]
+      // Create a URL for the PDF file to embed in iframe
+      const url = URL.createObjectURL(file)
+      setPdfPreviewUrl(url)
+    } catch (error) {
+      console.error('Error creating PDF preview:', error)
+    } finally {
+      setPreviewLoading(false)
+    }
   }
 
 
@@ -141,66 +186,97 @@ export default function AddPageNumbersComponent({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="relative bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden aspect-[8.5/11] max-w-lg mx-auto">
-                {/* Realistic Document Preview */}
-                <div className="p-6 text-gray-800">
-                  {/* Document Header */}
-                  <div className="text-center mb-6">
-                    <h1 className="text-lg font-bold text-gray-900 mb-1">Document Title</h1>
-                    <p className="text-sm text-gray-600">Sample PDF Document</p>
-                    <div className="w-12 h-0.5 bg-gray-400 mx-auto mt-2"></div>
-                  </div>
-                  
-                  {/* Document Body */}
-                  <div className="space-y-4 text-xs leading-relaxed">
-                    <div>
-                      <h3 className="font-semibold text-gray-800 mb-2">Introduction</h3>
-                      <p className="text-gray-700">
-                        This is a sample document that demonstrates how page numbers will appear 
-                        when added to your PDF. The preview shows the actual positioning and 
-                        formatting that will be applied to your document.
-                      </p>
+              <div className="relative bg-white border-2 border-gray-200 rounded-lg shadow-lg overflow-hidden max-w-lg mx-auto">
+                {files.length === 0 ? (
+                  /* Sample Preview when no file */
+                  <div className="aspect-[8.5/11] p-6 text-gray-800">
+                    <div className="text-center mb-6">
+                      <h1 className="text-lg font-bold text-gray-900 mb-1">Document Title</h1>
+                      <p className="text-sm text-gray-600">Sample PDF Document</p>
+                      <div className="w-12 h-0.5 bg-gray-400 mx-auto mt-2"></div>
                     </div>
                     
-                    <div>
-                      <h3 className="font-semibold text-gray-800 mb-2">Content Section</h3>
-                      <p className="text-gray-700 mb-2">
-                        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do 
-                        eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut 
-                        enim ad minim veniam, quis nostrud exercitation ullamco.
-                      </p>
-                      <p className="text-gray-700">
-                        Duis aute irure dolor in reprehenderit in voluptate velit esse 
-                        cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat 
-                        cupidatat non proident, sunt in culpa qui officia deserunt.
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-gray-800 mb-2">Additional Information</h3>
-                      <p className="text-gray-700">
-                        Sed ut perspiciatis unde omnis iste natus error sit voluptatem 
-                        accusantium doloremque laudantium, totam rem aperiam, eaque 
-                        ipsa quae ab illo inventore veritatis et quasi architecto.
-                      </p>
+                    <div className="space-y-4 text-xs leading-relaxed">
+                      <div>
+                        <h3 className="font-semibold text-gray-800 mb-2">Introduction</h3>
+                        <p className="text-gray-700">
+                          This is a sample document that demonstrates how page numbers will appear 
+                          when added to your PDF. Upload a PDF to see the actual first page preview.
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <h3 className="font-semibold text-gray-800 mb-2">Content Section</h3>
+                        <p className="text-gray-700 mb-2">
+                          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do 
+                          eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Footer area */}
-                  <div className="mt-8 pt-4 border-t border-gray-200">
-                    <p className="text-xs text-gray-500 text-center">End of Document Preview</p>
+                ) : (
+                  /* Real PDF Preview */
+                  <div className="relative">
+                    {previewLoading ? (
+                      <div className="aspect-[8.5/11] flex items-center justify-center bg-gray-50">
+                        <div className="text-center">
+                          <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mb-2 mx-auto" />
+                          <p className="text-sm text-gray-500">Loading PDF preview...</p>
+                        </div>
+                      </div>
+                    ) : pdfPreviewUrl ? (
+                      /* PDF Iframe Preview */
+                      <div className="relative bg-white border rounded-lg overflow-hidden">
+                        <iframe
+                          src={`${pdfPreviewUrl}#page=1&view=FitH`}
+                          className="w-full h-96 border-0"
+                          title="PDF Preview"
+                        />
+                        
+                        {/* Page Number Overlay */}
+                        <div style={getPositionStyle()} className="z-10 pointer-events-none">
+                          {getPreviewText(1, 10)}
+                        </div>
+                        
+                        {/* File info indicator */}
+                        <div className="absolute top-2 left-2 text-xs text-gray-500 bg-white bg-opacity-90 px-2 py-1 rounded shadow">
+                          {files[0].name} • First Page Preview
+                        </div>
+                      </div>
+                    ) : (
+                      /* Fallback enhanced preview */
+                      <div className="aspect-[8.5/11] p-6 text-gray-800 bg-white border rounded-lg">
+                        <div className="text-center mb-6">
+                          <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                            <FileText className="w-6 h-6 text-red-600" />
+                          </div>
+                          <h1 className="text-lg font-bold text-gray-900 mb-1">
+                            {files[0].name.replace(/\.pdf$/i, '')}
+                          </h1>
+                          <p className="text-sm text-gray-600">
+                            PDF Document • {(files[0].size / (1024 * 1024)).toFixed(1)} MB
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4 text-xs">
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <h3 className="font-semibold text-blue-800 mb-2">📄 Document Ready</h3>
+                            <p className="text-blue-700">
+                              Page numbers will be added to your PDF document in the selected position.
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Page Number Overlay */}
+                        <div style={getPositionStyle()} className="z-10">
+                          {getPreviewText(1, 10)}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
 
-                {/* Page Number Overlay */}
-                <div style={getPositionStyle()} className="z-10">
-                  {getPreviewText(1, files.length > 0 ? 10 : 1)}
-                </div>
 
-                {/* File name indicator */}
-                <div className="absolute bottom-2 left-2 text-xs text-gray-500 bg-white px-2 py-1 rounded shadow">
-                  {files.length > 0 ? files[0].name : 'sample.pdf'}
-                </div>
               </div>
             </CardContent>
           </Card>

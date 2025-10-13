@@ -31,6 +31,27 @@ import PdfOrganizer from "@/components/PdfOrganizer";
 import ImageOrganizer from "@/components/ImageOrganizer";
 import SimplePdfEditor from "@/components/SimplePdfEditor";
 import AddPageNumbersComponent from "@/components/AddPageNumbersComponent";
+import dynamic from "next/dynamic";
+
+// Dynamic import to prevent SSR issues with PDF.js
+const AddTextWatermarkComponent = dynamic(
+  () => import("@/components/AddTextWatermarkComponent"),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-gray-600">Loading watermark tool...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+);
 
 const toolConfig: Record<string, any> = {
   merge: {
@@ -909,6 +930,13 @@ export default function ToolPage() {
             processing={processing}
             onBack={() => setSelectedFiles([])}
           />
+        ) : toolId === "add-watermark" && selectedFiles.length > 0 ? (
+          <AddTextWatermarkComponent
+            files={selectedFiles}
+            onProcess={handleProcess}
+            processing={processing}
+            onBack={() => setSelectedFiles([])}
+          />
         ) : selectedFiles.length === 0 ? (
           /* Simple Upload Interface */
           <div className="w-full max-w-4xl mx-auto">
@@ -1280,8 +1308,8 @@ export default function ToolPage() {
               )}
             </div>
 
-            {/* Process Button - Hide for organize, scan-to-pdf, and add-page-numbers tools since they have their own controls */}
-            {toolId !== "organize" && toolId !== "scan-to-pdf" && toolId !== "add-page-numbers" && (
+            {/* Process Button - Hide for organize, scan-to-pdf, add-page-numbers, and add-watermark tools since they have their own controls */}
+            {toolId !== "organize" && toolId !== "scan-to-pdf" && toolId !== "add-page-numbers" && toolId !== "add-watermark" && (
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">

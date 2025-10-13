@@ -6,8 +6,22 @@ import EditorToolbar, { ToolType } from '@/components/EditorToolbar';
 import PropertiesPanel from '@/components/PropertiesPanel';
 import ThumbnailNavigationPanel from '@/components/ThumbnailNavigationPanel';
 import { Button } from '@/components/ui/button';
-import { Upload, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
+import { Upload, Loader2 } from 'lucide-react';
+// Dynamic import for pdfjs-dist to avoid canvas build issues
+let pdfjsLib: any = null;
+
+// Initialize PDF.js asynchronously
+const initPdfjs = async () => {
+  if (typeof window !== 'undefined' && !pdfjsLib) {
+    try {
+      const pdfjs = await import('pdfjs-dist');
+      pdfjsLib = pdfjs;
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+    } catch (error) {
+      console.error('Failed to load PDF.js:', error);
+    }
+  }
+};
 
 // Simple toast implementation
 const useToast = () => {
@@ -18,22 +32,22 @@ const useToast = () => {
   return { toast };
 };
 
-// Configure PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
-}
-
 export default function PdfEditorPage() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pdfUrl, setPdfUrl] = useState<string>('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [pdfDoc, setPdfDoc] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(true);
 
   // Editor hook
   const editor = PdfEditorAdvanced({ url: pdfUrl });
+
+  // Initialize PDF.js on mount
+  useEffect(() => {
+    initPdfjs();
+  }, []);
 
   // Load PDF document for thumbnails
   useEffect(() => {
@@ -41,6 +55,13 @@ export default function PdfEditorPage() {
 
     const loadPdf = async () => {
       try {
+        // Ensure PDF.js is loaded
+        await initPdfjs();
+        if (!pdfjsLib) {
+          console.error('PDF.js not available');
+          return;
+        }
+        
         const loadingTask = pdfjsLib.getDocument(pdfUrl);
         const pdf = await loadingTask.promise;
         setPdfDoc(pdf);
@@ -246,27 +267,7 @@ export default function PdfEditorPage() {
           ) : (
             <div className="flex flex-col items-center space-y-4">
               {/* Page Navigation */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-300 px-4 py-2 flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => editor.setCurrentPage(Math.max(1, editor.currentPage - 1))}
-                  disabled={editor.currentPage === 1}
-                >
-                  <ChevronLeft size={16} />
-                </Button>
-                <span className="text-sm font-medium">
-                  Page {editor.currentPage} of {editor.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => editor.setCurrentPage(Math.min(editor.totalPages, editor.currentPage + 1))}
-                  disabled={editor.currentPage === editor.totalPages}
-                >
-                  <ChevronRight size={16} />
-                </Button>
-              </div>
+
 
               {/* Editor Viewer */}
               <div className="bg-white shadow-xl rounded-lg overflow-hidden border border-gray-300">

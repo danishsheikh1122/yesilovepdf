@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '50mb', // Increase from default 1mb to 50mb for large files
+    },
+  },
   webpack: (config, { isServer }) => {
     // Exclude canvas and other server-side modules from client bundle
     if (!isServer) {
@@ -11,6 +16,7 @@ const nextConfig: NextConfig = {
         stream: false,
         util: false,
         encoding: false,
+        'pdfjs-dist/build/pdf.worker.js': false,
       };
 
       // Prevent canvas from being bundled on client side

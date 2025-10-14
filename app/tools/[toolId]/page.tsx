@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,6 +30,28 @@ import EnhancedMerge from "@/components/EnhancedMergeNew";
 import PdfOrganizer from "@/components/PdfOrganizer";
 import ImageOrganizer from "@/components/ImageOrganizer";
 import SimplePdfEditor from "@/components/SimplePdfEditor";
+import AddPageNumbersComponent from "@/components/AddPageNumbersComponent";
+import dynamic from "next/dynamic";
+
+// Dynamic import to prevent SSR issues with PDF.js
+const AddTextWatermarkComponent = dynamic(
+  () => import("@/components/AddTextWatermarkComponent"),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-gray-600">Loading watermark tool...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+);
 
 const toolConfig: Record<string, any> = {
   merge: {
@@ -158,13 +180,6 @@ const toolConfig: Record<string, any> = {
     multiple: false,
     minFiles: 1,
   },
-  "pdf-to-pdfa": {
-    title: "PDF to PDF/A",
-    description: "Convert to archival format",
-    acceptedTypes: [".pdf"],
-    multiple: false,
-    minFiles: 1,
-  },
   rotate: {
     title: "Rotate PDF",
     description: "Rotate PDF pages",
@@ -222,8 +237,70 @@ export default function ToolPage() {
     downloadUrl: string;
     filename: string;
   } | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   const tool = toolConfig[toolId];
+
+  // Drag and drop handlers
+  const handleDrag = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const filteredFiles = files.filter(file =>
+      tool.acceptedTypes.some((type: string) =>
+        file.type.includes(type.replace('.', '')) || file.name.toLowerCase().endsWith(type)
+      )
+    );
+    
+    if (filteredFiles.length > 0) {
+      if (tool.multiple) {
+        setSelectedFiles(prev => [...prev, ...filteredFiles]);
+      } else {
+        setSelectedFiles(filteredFiles.slice(0, 1));
+      }
+    }
+  }, [tool]);
+
+  // Keyboard handler for Enter key
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "Enter" && selectedFiles.length >= tool.minFiles) {
+      // If it's a tool that needs special handling, don't auto-proceed
+      if (toolId === "organize" || toolId === "scan-to-pdf" ||
+          (toolId === "remove-pages" && selectedPages.length === 0) ||
+          (toolId === "extract-pages" && selectedPages.length === 0)) {
+        return;
+      }
+      
+      // Auto-proceed to processing for simple tools
+      if (toolId !== "merge") {
+        // Call handleProcess function if available
+        const processBtn = document.querySelector('[data-process-btn]') as HTMLButtonElement;
+        if (processBtn && !processBtn.disabled) {
+          processBtn.click();
+        }
+      }
+    }
+  }, [selectedFiles, tool, toolId, selectedPages]);
+
+  // Add keyboard event listener
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   // Special case for edit tool - show PDF editor
   if (toolId === 'edit') {
@@ -269,6 +346,21 @@ export default function ToolPage() {
     }
   }, [toolId, options.quality]);
 
+  // Initialize default options for add-page-numbers
+  useEffect(() => {
+    if (toolId === 'add-page-numbers' && Object.keys(options).length === 0) {
+      setOptions({
+        position: 'bottom-right',
+        format: 'number',
+        startNumber: 1,
+        fontSize: 12,
+        color: '#000000',
+        marginX: 20,
+        marginY: 20
+      });
+    }
+  }, [toolId, options]);
+
   if (!tool) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -284,7 +376,7 @@ export default function ToolPage() {
 
 
 
-  const handleProcess = async () => {
+  const handleProcess = async (overrideOptions?: Record<string, any>) => {
     if (selectedFiles.length >= tool.minFiles) {
       setProcessing(true);
       setStatus("processing");
@@ -295,9 +387,14 @@ export default function ToolPage() {
         const formData = new FormData();
         selectedFiles.forEach((file) => formData.append("files", file));
 
+        // Use overrideOptions (from child component) when provided, otherwise use local options
+        const finalOptions = overrideOptions && Object.keys(overrideOptions).length > 0 ? overrideOptions : options;
+
         // Add tool-specific options
-        Object.keys(options).forEach((key) => {
-          formData.append(key, options[key]);
+        Object.keys(finalOptions).forEach((key) => {
+          // Ensure values are strings when appending
+          const value = finalOptions[key];
+          formData.append(key, value === undefined || value === null ? '' : String(value));
         });
 
         // Add selected pages for tools that need them
@@ -826,19 +923,49 @@ export default function ToolPage() {
             onMerge={handleEnhancedMerge}
             processing={processing}
           />
+        ) : toolId === "add-page-numbers" && selectedFiles.length > 0 ? (
+          <AddPageNumbersComponent
+            files={selectedFiles}
+            onProcess={handleProcess}
+            processing={processing}
+            onBack={() => setSelectedFiles([])}
+          />
+        ) : toolId === "add-watermark" && selectedFiles.length > 0 ? (
+          <AddTextWatermarkComponent
+            files={selectedFiles}
+            onProcess={handleProcess}
+            processing={processing}
+            onBack={() => setSelectedFiles([])}
+          />
         ) : selectedFiles.length === 0 ? (
           /* Simple Upload Interface */
           <div className="w-full max-w-4xl mx-auto">
-            <Card className="border-2 border-dashed border-gray-300 hover:border-gray-400 transition-colors">
+            <Card
+              className={`border-2 border-dashed transition-all duration-300 cursor-pointer ${
+                dragActive
+                  ? "border-red-400 bg-red-50/50"
+                  : "border-gray-300 hover:border-red-400 hover:bg-red-50/30"
+              }`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
               <CardContent className="p-12">
                 <div className="flex flex-col items-center justify-center text-center space-y-4">
-                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
-                    <Upload className="w-10 h-10 text-red-600" />
+                  <div className={`w-20 h-20 rounded-full flex items-center justify-center transition-colors ${
+                    dragActive ? "bg-red-200" : "bg-red-100"
+                  }`}>
+                    <Upload className={`w-10 h-10 transition-colors ${
+                      dragActive ? "text-red-700" : "text-red-600"
+                    }`} />
                   </div>
 
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      {tool.multiple
+                      {dragActive
+                        ? "Drop your files here"
+                        : tool.multiple
                         ? "Choose files or drag them here"
                         : "Choose file or drag it here"}
                     </h3>
@@ -858,6 +985,9 @@ export default function ToolPage() {
                     >
                       Browse Files
                     </Button>
+                    <p className="text-xs text-gray-500">
+                      Press Enter after uploading to continue quickly
+                    </p>
                   </div>
 
                   <input
@@ -1178,8 +1308,8 @@ export default function ToolPage() {
               )}
             </div>
 
-            {/* Process Button - Hide for organize and scan-to-pdf tools since they have their own controls */}
-            {toolId !== "organize" && toolId !== "scan-to-pdf" && (
+            {/* Process Button - Hide for organize, scan-to-pdf, add-page-numbers, and add-watermark tools since they have their own controls */}
+            {toolId !== "organize" && toolId !== "scan-to-pdf" && toolId !== "add-page-numbers" && toolId !== "add-watermark" && (
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -1191,8 +1321,14 @@ export default function ToolPage() {
                         } from`}
                       {selectedFiles.length} file
                       {selectedFiles.length !== 1 ? "s" : ""}
+                      {selectedFiles.length >= tool.minFiles &&
+                        toolId !== "remove-pages" &&
+                        toolId !== "extract-pages" && (
+                          <span className="ml-2 text-xs text-blue-600">(Press Enter ⏎)</span>
+                        )}
                     </div>
                     <Button
+                      data-process-btn
                       onClick={handleProcess}
                       disabled={
                         selectedFiles.length < tool.minFiles ||

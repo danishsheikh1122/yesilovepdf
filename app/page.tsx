@@ -221,12 +221,12 @@ export default function HomePage() {
       href: "/tools/add-watermark",
     },
     {
-      id: "crop",
+      id: "crop-pdf",
       title: "Crop PDF",
       description: "Crop and resize PDF pages to remove unwanted margins",
       icon: <Crop className="w-8 h-8 text-white" />,
       gradient: "bg-gradient-to-br from-lime-400 to-lime-600",
-      href: "/tools/crop",
+      href: "/tools/crop-pdf",
     },
     {
       id: "edit-pdf",

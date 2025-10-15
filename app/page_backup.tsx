@@ -277,20 +277,20 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
       {/* Floating Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large floating circles */}
-        <div className="fixed top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-blue-300/20 rounded-full animate-float-slow"></div>
-        <div className="fixed top-40 right-20 w-24 h-24 bg-gradient-to-br from-red-200/30 to-red-300/20 rounded-full animate-float-delayed"></div>
-        <div className="fixed bottom-40 left-20 w-40 h-40 bg-gradient-to-br from-purple-200/25 to-purple-300/15 rounded-full animate-float-reverse"></div>
-        <div className="fixed bottom-20 right-40 w-28 h-28 bg-gradient-to-br from-green-200/30 to-green-300/20 rounded-full animate-float-fast"></div>
+        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-blue-300/20 rounded-full animate-float-slow"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-red-200/30 to-red-300/20 rounded-full animate-float-delayed"></div>
+        <div className="absolute bottom-40 left-20 w-40 h-40 bg-gradient-to-br from-purple-200/25 to-purple-300/15 rounded-full animate-float-reverse"></div>
+        <div className="absolute bottom-20 right-40 w-28 h-28 bg-gradient-to-br from-green-200/30 to-green-300/20 rounded-full animate-float-fast"></div>
         
         {/* Medium floating shapes */}
-        <div className="fixed top-60 left-1/3 w-16 h-16 bg-gradient-to-br from-yellow-200/40 to-orange-300/25 rounded-full animate-float-medium"></div>
-        <div className="fixed top-80 right-1/3 w-20 h-20 bg-gradient-to-br from-cyan-200/35 to-teal-300/20 rounded-full animate-float-slow-delayed"></div>
+        <div className="absolute top-60 left-1/3 w-16 h-16 bg-gradient-to-br from-yellow-200/40 to-orange-300/25 rounded-full animate-float-medium"></div>
+        <div className="absolute top-80 right-1/3 w-20 h-20 bg-gradient-to-br from-cyan-200/35 to-teal-300/20 rounded-full animate-float-slow-delayed"></div>
         
         {/* Small decorative elements */}
-        <div className="fixed top-32 left-1/2 w-12 h-12 bg-gradient-to-br from-pink-200/45 to-rose-300/30 rounded-full animate-float-tiny"></div>
-        <div className="fixed bottom-60 left-1/4 w-14 h-14 bg-gradient-to-br from-indigo-200/40 to-blue-400/25 rounded-full animate-float-reverse-slow"></div>
+        <div className="absolute top-32 left-1/2 w-12 h-12 bg-gradient-to-br from-pink-200/45 to-rose-300/30 rounded-full animate-float-tiny"></div>
+        <div className="absolute bottom-60 left-1/4 w-14 h-14 bg-gradient-to-br from-indigo-200/40 to-blue-400/25 rounded-full animate-float-reverse-slow"></div>
       </div>
 
       {/* Hero Section */}

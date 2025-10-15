@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 
-import { Download, Eye, Settings, FileText, CheckCircle, RefreshCw } from 'lucide-react'
+import { Download, Eye, Settings, FileText, CheckCircle, RefreshCw, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 // Simple file info display without PDF.js to avoid build issues
 
@@ -450,12 +450,13 @@ export default function AddPageNumbersComponent({
                   )}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={onBack}
                   disabled={processing}
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2 text-gray-600 hover:text-gray-900"
                 >
-                  ← Back to Upload
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
                 </Button>
               </div>
             </CardContent>

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Download, Eye, Settings, FileText, CheckCircle, RefreshCw, Type, Copy, RotateCcw, Upload } from 'lucide-react'
+import { Download, Eye, Settings, FileText, CheckCircle, RefreshCw, Type, Copy, RotateCcw, Upload, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AddTextWatermarkProps {
@@ -163,9 +163,10 @@ export default function AddTextWatermarkComponent({
           <Button
             onClick={onBack}
             variant="ghost"
-            className="mb-4 text-gray-600 hover:text-gray-800"
+            className="mb-4 text-gray-600 hover:text-gray-800 flex items-center gap-2"
           >
-            ← Back to tools
+            <ArrowLeft className="w-4 h-4" />
+            Back
           </Button>
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2 bg-blue-100 rounded-lg">

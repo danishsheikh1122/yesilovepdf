@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     },
   },
   webpack: (config, { isServer }) => {
-    // Completely exclude canvas and other Node.js modules from client bundle
+    // Handle PDF.js properly for browser
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
         stream: false,
         util: false,
         encoding: false,
+        path: false,
+        url: false,
         'pdfjs-dist/build/pdf.worker.js': false,
       };
 
@@ -37,7 +39,7 @@ const nextConfig: NextConfig = {
         use: 'null-loader',
       });
 
-      // Use webpack IgnorePlugin for canvas and related modules
+      // Use webpack IgnorePlugin for Node.js specific modules
       const webpack = require('webpack');
       config.plugins.push(
         new webpack.IgnorePlugin({
@@ -54,6 +56,14 @@ const nextConfig: NextConfig = {
       config.plugins.push(
         new webpack.IgnorePlugin({
           resourceRegExp: /^canvas$/,
+          contextRegExp: /pdfjs-dist/,
+        })
+      );
+
+      // Ignore Node.js specific modules in pdfjs-dist
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^(fs|path|url)$/,
           contextRegExp: /pdfjs-dist/,
         })
       );

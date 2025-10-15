@@ -4,11 +4,16 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Upload, Type, Square, Circle, Minus, Edit3, Undo, Redo, ZoomIn, ZoomOut, Download, Save } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist/webpack';
 
-// Configure PDF.js worker
+// Dynamically import PDF.js only in browser environment
+let pdfjsLib: any = null;
+
 if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+  import('pdfjs-dist').then((pdfjs) => {
+    pdfjsLib = pdfjs;
+    // Configure PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+  });
 }
 
 interface DrawingElement {
@@ -55,6 +60,13 @@ export default function PdfEditor() {
     setPdfFile(file);
     
     try {
+      // Ensure PDF.js is loaded
+      if (!pdfjsLib) {
+        const pdfjs = await import('pdfjs-dist');
+        pdfjsLib = pdfjs;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+      }
+
       const arrayBuffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
@@ -76,7 +88,7 @@ export default function PdfEditor() {
 
   // Render PDF page
   const renderPage = useCallback(async () => {
-    if (!pdfDoc || !canvasRef.current) return;
+    if (!pdfDoc || !canvasRef.current || !pdfjsLib) return;
 
     try {
       const page = await pdfDoc.getPage(currentPage);

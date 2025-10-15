@@ -1,5 +1,8 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useRef } from "react";
 import {
   FileText,
   Merge,
@@ -31,8 +34,22 @@ import {
   Lock,
 } from "lucide-react";
 import ToolCard from "@/components/ToolCard";
+import SearchBar, { SearchBarRef } from "@/components/SearchBar";
 
 export default function HomePage() {
+  const searchBarRef = useRef<SearchBarRef>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
+        searchBarRef.current?.toggle();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const organizeTools = [
     {
       id: "merge",
@@ -259,8 +276,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 py-16 sm:py-24">
+    <div className="relative overflow-visible">
+  <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-red-500 rounded-2xl flex items-center justify-center mr-4">
@@ -279,11 +296,16 @@ export default function HomePage() {
               The Complete PDF Solution for All Your Needs
             </p>
 
-            <p className="text-lg text-gray-500 mb-12 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-500 mb-4 max-w-2xl mx-auto">
               Organize, optimize, convert, and edit your PDFs with our
               comprehensive toolkit. No sign-ups, no watermarks, just powerful
               PDF tools. ✨
             </p>
+
+            {/* Search Bar */}
+            <div className="mb-12 relative z-50">
+              <SearchBar ref={searchBarRef} />
+            </div>
 
             {/* Quick Features */}
             <div className="flex flex-wrap justify-center gap-8 mb-16">
@@ -309,9 +331,9 @@ export default function HomePage() {
       </div>
 
       {/* Tools Sections */}
-      <div className="max-w-7xl mx-auto px-6 pb-24 space-y-20">
+      <div className="max-w-7xl mx-auto px-6 pb-24 space-y-20 mt-12">
         {/* Organize PDF Section */}
-        <section>
+        <section className="pt-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               📁 Organize PDF

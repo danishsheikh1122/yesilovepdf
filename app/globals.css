@@ -1,3 +1,7 @@
+
+@import '@react-pdf-viewer/core/lib/styles/index.css';
+@import '@react-pdf-viewer/toolbar/lib/styles/index.css';
+@import '@react-pdf-viewer/highlight/lib/styles/index.css';
 @import "tailwindcss";
 
 @layer base {
@@ -56,3 +60,8 @@
     color: #111827;
   }
 }
+
+/* PDF Viewer Styles */
+@import '@react-pdf-viewer/core/lib/styles/index.css';
+@import '@react-pdf-viewer/toolbar/lib/styles/index.css';
+@import '@react-pdf-viewer/highlight/lib/styles/index.css';

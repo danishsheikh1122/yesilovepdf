@@ -44,7 +44,7 @@ export default function CropPdfBrowser() {
       script.onload = async () => {
         try {
           // @ts-ignore - Dynamic import
-          const pdfjs = await import('pdfjs-dist');
+          const pdfjs = await import('pdfjs-dist/webpack');
           // @ts-ignore
           pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
           setPdfjsLoaded(true);
@@ -71,7 +71,7 @@ export default function CropPdfBrowser() {
         // Try to load PDF.js in browser
         try {
           // @ts-ignore
-          const pdfjs = await import('pdfjs-dist');
+          const pdfjs = await import('pdfjs-dist/webpack');
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           

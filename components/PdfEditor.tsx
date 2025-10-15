@@ -67,6 +67,11 @@ export default function PdfEditor({ pdfUrl = "/sample.pdf" }: PdfEditorProps) {
         overlay.width = viewport.width;
       }
       
+      if (!context) {
+        console.error('Canvas context is null');
+        return;
+      }
+      
       const renderContext = {
         canvasContext: context,
         viewport: viewport

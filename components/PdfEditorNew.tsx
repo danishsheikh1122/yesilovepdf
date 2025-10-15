@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Upload, Type, Square, Circle, Minus, Edit3, Undo, Redo, ZoomIn, ZoomOut, Download, Save } from 'lucide-react';
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/webpack';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {

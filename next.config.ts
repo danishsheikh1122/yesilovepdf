@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     },
   },
   webpack: (config, { isServer }) => {
-    // Exclude canvas and other server-side modules from client bundle
+    // Completely exclude canvas and other Node.js modules from client bundle
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -19,18 +19,54 @@ const nextConfig: NextConfig = {
         'pdfjs-dist/build/pdf.worker.js': false,
       };
 
-      // Prevent canvas from being bundled on client side
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        canvas: false,
-      };
-    }
+      // Use null-loader to ignore canvas completely
+      config.module.rules.push({
+        test: /canvas/,
+        use: 'null-loader',
+      });
 
-    // Always ignore canvas module
-    config.externals = [...(config.externals || [])];
-    if (!isServer) {
+      // Ignore specific canvas.node files
+      config.module.rules.push({
+        test: /canvas\.node$/,
+        use: 'null-loader',
+      });
+
+      // More aggressive canvas exclusion
+      config.module.rules.push({
+        test: /node_modules.*canvas.*\.node$/,
+        use: 'null-loader',
+      });
+
+      // Use webpack IgnorePlugin for canvas and related modules
+      const webpack = require('webpack');
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^canvas$/,
+        })
+      );
+      
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /canvas\.node$/,
+        })
+      );
+
+      config.plugins.push(
+        new webpack.IgnorePlugin({
+          resourceRegExp: /^canvas$/,
+          contextRegExp: /pdfjs-dist/,
+        })
+      );
+
+      // Add canvas as external to prevent bundling
+      config.externals = config.externals || [];
       if (Array.isArray(config.externals)) {
         config.externals.push('canvas');
+        config.externals.push({ canvas: 'canvas' });
+        config.externals.push({
+          canvas: 'commonjs canvas',
+          'canvas/lib/bindings': 'commonjs canvas/lib/bindings',
+        });
       }
     }
 

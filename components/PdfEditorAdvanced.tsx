@@ -2,14 +2,23 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Stage, Layer, Text, Rect, Circle, Line, Arrow, Transformer } from "react-konva";
-import * as pdfjsLib from "pdfjs-dist";
 import Konva from "konva";
 import type { KonvaEventObject } from "konva/lib/Node";
 
-// Configure PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
-}
+// Dynamic import for PDF.js to avoid canvas issues
+let pdfjsLib: any = null;
+
+const initPdfjs = async () => {
+  if (typeof window !== 'undefined' && !pdfjsLib) {
+    try {
+      pdfjsLib = await import('pdfjs-dist');
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+    } catch (error) {
+      console.error('Failed to load PDF.js:', error);
+    }
+  }
+  return pdfjsLib;
+};
 
 export interface EditorElement {
   id: string;
@@ -56,7 +65,9 @@ const PdfEditorAdvanced = ({ url, onSave }: PdfEditorAdvancedProps) => {
   const stageRefs = useRef<Map<number, Konva.Stage>>(new Map());
   const transformerRef = useRef<Konva.Transformer>(null);
   
-  const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [pdfDoc, setPdfDoc] = useState<any | null>(null);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [pageSize, setPageSize] = useState({ width: 800, height: 1100 });

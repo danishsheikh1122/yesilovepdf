@@ -14,7 +14,7 @@ let pdfjsLib: any = null;
 const initPdfjs = async () => {
   if (typeof window !== 'undefined' && !pdfjsLib) {
     try {
-      const pdfjs = await import('pdfjs-dist');
+      const pdfjs = await import('pdfjs-dist/webpack');
       pdfjsLib = pdfjs;
       pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
     } catch (error) {

@@ -1,7 +1,17 @@
 "use client";
 
-import PdfEditorPage from '@/components/PdfEditorPage';
+import dynamic from 'next/dynamic';
+
+// Use PdfEditorNew - it has proper PDF.js integration with overlay canvas
+const PdfEditor = dynamic(
+  () => import('@/components/PdfEditorNew'),
+  { ssr: false }
+);
 
 export default function EditPdfTool() {
-  return <PdfEditorPage />;
+  return (
+    <div className="min-h-screen">
+      <PdfEditor />
+    </div>
+  );
 }

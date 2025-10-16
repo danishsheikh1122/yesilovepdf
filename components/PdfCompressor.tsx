@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Upload, Download, FileText, Zap, Eye, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { pdfTrackers } from '@/lib/pdfTracking';
 
 interface CompressionLevel {
   value: string;
@@ -105,6 +106,9 @@ export default function PdfCompressor() {
       const blob = await response.blob();
       setCompressedBlob(blob);
       setShowPreview(true);
+
+      // Track the compression action
+      await pdfTrackers.compress(file);
 
     } catch (error) {
       console.error('Compression error:', error);

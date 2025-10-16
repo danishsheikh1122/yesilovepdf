@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import ToolCard from "@/components/ToolCard";
 import SearchBar, { SearchBarRef } from "@/components/SearchBar";
+import TrustedByStats from "@/components/TrustedByStats";
 
 export default function HomePage() {
   const searchBarRef = useRef<SearchBarRef>(null);
@@ -346,6 +347,11 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Trusted By Stats Section */}
+      <div className="relative z-10 bg-white/40 backdrop-blur-sm">
+        <TrustedByStats />
       </div>
 
       {/* Tools Sections */}

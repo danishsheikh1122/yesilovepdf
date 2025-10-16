@@ -1,30 +1,31 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Upload, 
-  Type, 
-  Square, 
-  Circle, 
-  Minus, 
-  Edit3, 
-  Undo, 
-  Redo, 
-  ZoomIn, 
-  ZoomOut, 
-  Download, 
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { pdfTrackers } from "@/lib/pdfTracking";
+import {
+  Upload,
+  Type,
+  Square,
+  Circle,
+  Minus,
+  Edit3,
+  Undo,
+  Redo,
+  ZoomIn,
+  ZoomOut,
+  Download,
   Save,
   FileText,
-  Palette
-} from 'lucide-react';
+  Palette,
+} from "lucide-react";
 
 // Type definitions
 interface DrawingElement {
   id: string;
-  type: 'text' | 'rectangle' | 'circle' | 'line';
+  type: "text" | "rectangle" | "circle" | "line";
   x: number;
   y: number;
   width?: number;
@@ -41,8 +42,8 @@ export default function BrowserPdfEditor() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1.2);
-  const [selectedTool, setSelectedTool] = useState<string>('select');
-  const [currentColor, setCurrentColor] = useState('#FF0000');
+  const [selectedTool, setSelectedTool] = useState<string>("select");
+  const [currentColor, setCurrentColor] = useState("#FF0000");
   const [strokeWidth, setStrokeWidth] = useState(2);
   const [fontSize, setFontSize] = useState(16);
   const [elements, setElements] = useState<DrawingElement[]>([]);
@@ -60,15 +61,15 @@ export default function BrowserPdfEditor() {
   // Initialize PDF.js
   useEffect(() => {
     const initPdfJs = async () => {
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         try {
-          const pdfjs = await import('pdfjs-dist');
-          
+          const pdfjs = await import("pdfjs-dist");
+
           // Configure worker
-          pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+          pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
           setPdfjsLib(pdfjs);
         } catch (error) {
-          console.error('Failed to load PDF.js:', error);
+          console.error("Failed to load PDF.js:", error);
         }
       }
     };
@@ -77,42 +78,44 @@ export default function BrowserPdfEditor() {
   }, []);
 
   // Handle file upload
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || file.type !== 'application/pdf') {
-      alert('Please select a valid PDF file');
-      return;
-    }
+  const handleFileUpload = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file || file.type !== "application/pdf") {
+        alert("Please select a valid PDF file");
+        return;
+      }
 
-    if (!pdfjsLib) {
-      alert('PDF.js is not loaded yet. Please try again.');
-      return;
-    }
+      if (!pdfjsLib) {
+        alert("PDF.js is not loaded yet. Please try again.");
+        return;
+      }
 
-    setPdfFile(file);
-    setIsLoading(true);
-    
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-      const pdf = await loadingTask.promise;
-      
-      setPdfDoc(pdf);
-      setTotalPages(pdf.numPages);
-      setCurrentPage(1);
-      
-      // Clear any existing elements
-      setElements([]);
-      setHistory([]);
-      setHistoryIndex(-1);
-      
-    } catch (error) {
-      console.error('Error loading PDF:', error);
-      alert('Error loading PDF file. Please make sure it\'s a valid PDF.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pdfjsLib]);
+      setPdfFile(file);
+      setIsLoading(true);
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+
+        setPdfDoc(pdf);
+        setTotalPages(pdf.numPages);
+        setCurrentPage(1);
+
+        // Clear any existing elements
+        setElements([]);
+        setHistory([]);
+        setHistoryIndex(-1);
+      } catch (error) {
+        console.error("Error loading PDF:", error);
+        alert("Error loading PDF file. Please make sure it's a valid PDF.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [pdfjsLib]
+  );
 
   // Render PDF page
   const renderPage = useCallback(async () => {
@@ -121,15 +124,15 @@ export default function BrowserPdfEditor() {
     try {
       const page = await pdfDoc.getPage(currentPage);
       const viewport = page.getViewport({ scale });
-      
+
       const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
+      const context = canvas.getContext("2d");
+
       if (!context) return;
 
       canvas.height = viewport.height;
       canvas.width = viewport.width;
-      
+
       // Setup overlay canvas
       if (overlayCanvasRef.current) {
         overlayCanvasRef.current.width = viewport.width;
@@ -146,12 +149,11 @@ export default function BrowserPdfEditor() {
       };
 
       await page.render(renderContext).promise;
-      
+
       // Re-render overlay elements
       renderOverlay();
-      
     } catch (error) {
-      console.error('Error rendering page:', error);
+      console.error("Error rendering page:", error);
     }
   }, [pdfDoc, currentPage, scale, pdfjsLib]);
 
@@ -160,7 +162,7 @@ export default function BrowserPdfEditor() {
     if (!overlayCanvasRef.current) return;
 
     const canvas = overlayCanvasRef.current;
-    const context = canvas.getContext('2d');
+    const context = canvas.getContext("2d");
     if (!context) return;
 
     // Clear overlay
@@ -173,27 +175,41 @@ export default function BrowserPdfEditor() {
       context.fillStyle = element.color;
 
       switch (element.type) {
-        case 'rectangle':
+        case "rectangle":
           if (element.width && element.height) {
-            context.strokeRect(element.x, element.y, element.width, element.height);
+            context.strokeRect(
+              element.x,
+              element.y,
+              element.width,
+              element.height
+            );
           }
           break;
-        case 'circle':
+        case "circle":
           if (element.width) {
             context.beginPath();
-            context.arc(element.x, element.y, element.width / 2, 0, 2 * Math.PI);
+            context.arc(
+              element.x,
+              element.y,
+              element.width / 2,
+              0,
+              2 * Math.PI
+            );
             context.stroke();
           }
           break;
-        case 'line':
+        case "line":
           if (element.width && element.height) {
             context.beginPath();
             context.moveTo(element.x, element.y);
-            context.lineTo(element.x + element.width, element.y + element.height);
+            context.lineTo(
+              element.x + element.width,
+              element.y + element.height
+            );
             context.stroke();
           }
           break;
-        case 'text':
+        case "text":
           if (element.text && element.fontSize) {
             context.font = `${element.fontSize}px Arial`;
             context.fillText(element.text, element.x, element.y);
@@ -214,81 +230,101 @@ export default function BrowserPdfEditor() {
   }, [renderOverlay]);
 
   // Add element to history
-  const addToHistory = useCallback((newElements: DrawingElement[]) => {
-    const newHistory = history.slice(0, historyIndex + 1);
-    newHistory.push([...newElements]);
-    setHistory(newHistory);
-    setHistoryIndex(newHistory.length - 1);
-  }, [history, historyIndex]);
+  const addToHistory = useCallback(
+    (newElements: DrawingElement[]) => {
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push([...newElements]);
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    },
+    [history, historyIndex]
+  );
 
   // Handle canvas mouse events
-  const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!overlayCanvasRef.current || selectedTool === 'select') return;
+  const handleMouseDown = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!overlayCanvasRef.current || selectedTool === "select") return;
 
-    const rect = overlayCanvasRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+      const rect = overlayCanvasRef.current.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
 
-    if (selectedTool === 'text') {
-      const text = prompt('Enter text:');
-      if (text) {
-        const newElement: DrawingElement = {
-          id: Date.now().toString(),
-          type: 'text',
-          x,
-          y,
-          text,
-          color: currentColor,
-          fontSize,
-          strokeWidth,
-        };
-        const newElements = [...elements, newElement];
-        setElements(newElements);
-        addToHistory(newElements);
+      if (selectedTool === "text") {
+        const text = prompt("Enter text:");
+        if (text) {
+          const newElement: DrawingElement = {
+            id: Date.now().toString(),
+            type: "text",
+            x,
+            y,
+            text,
+            color: currentColor,
+            fontSize,
+            strokeWidth,
+          };
+          const newElements = [...elements, newElement];
+          setElements(newElements);
+          addToHistory(newElements);
+        }
+        return;
       }
-      return;
-    }
 
-    setIsDrawing(true);
-    const newElement: DrawingElement = {
-      id: Date.now().toString(),
-      type: selectedTool as any,
-      x,
-      y,
-      width: 0,
-      height: 0,
-      color: currentColor,
-      strokeWidth,
-    };
-    setElements([...elements, newElement]);
-  }, [selectedTool, elements, currentColor, strokeWidth, fontSize, addToHistory]);
+      setIsDrawing(true);
+      const newElement: DrawingElement = {
+        id: Date.now().toString(),
+        type: selectedTool as any,
+        x,
+        y,
+        width: 0,
+        height: 0,
+        color: currentColor,
+        strokeWidth,
+      };
+      setElements([...elements, newElement]);
+    },
+    [selectedTool, elements, currentColor, strokeWidth, fontSize, addToHistory]
+  );
 
-  const handleMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !overlayCanvasRef.current || selectedTool === 'select' || selectedTool === 'text') return;
+  const handleMouseMove = useCallback(
+    (event: React.MouseEvent<HTMLCanvasElement>) => {
+      if (
+        !isDrawing ||
+        !overlayCanvasRef.current ||
+        selectedTool === "select" ||
+        selectedTool === "text"
+      )
+        return;
 
-    const rect = overlayCanvasRef.current.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+      const rect = overlayCanvasRef.current.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
 
-    setElements(prev => {
-      const newElements = [...prev];
-      const lastElement = newElements[newElements.length - 1];
-      
-      if (lastElement) {
-        lastElement.width = x - lastElement.x;
-        lastElement.height = y - lastElement.y;
-      }
-      
-      return newElements;
-    });
-  }, [isDrawing, selectedTool]);
+      setElements((prev) => {
+        const newElements = [...prev];
+        const lastElement = newElements[newElements.length - 1];
 
-  const handleMouseUp = useCallback(() => {
+        if (lastElement) {
+          lastElement.width = x - lastElement.x;
+          lastElement.height = y - lastElement.y;
+        }
+
+        return newElements;
+      });
+    },
+    [isDrawing, selectedTool]
+  );
+
+  const handleMouseUp = useCallback(async () => {
     if (isDrawing) {
       setIsDrawing(false);
       addToHistory(elements);
+
+      // Track edit action when user finishes drawing
+      if (pdfFile) {
+        await pdfTrackers.edit(pdfFile);
+      }
     }
-  }, [isDrawing, elements, addToHistory]);
+  }, [isDrawing, elements, addToHistory, pdfFile]);
 
   // Navigation functions
   const goToPrevPage = () => {
@@ -304,8 +340,8 @@ export default function BrowserPdfEditor() {
   };
 
   // Zoom functions
-  const zoomIn = () => setScale(prev => Math.min(prev + 0.2, 3));
-  const zoomOut = () => setScale(prev => Math.max(prev - 0.2, 0.5));
+  const zoomIn = () => setScale((prev) => Math.min(prev + 0.2, 3));
+  const zoomOut = () => setScale((prev) => Math.max(prev - 0.2, 0.5));
 
   // Undo/Redo
   const undo = () => {
@@ -324,11 +360,11 @@ export default function BrowserPdfEditor() {
 
   // Tool selection
   const tools = [
-    { id: 'select', label: 'Select', icon: Edit3 },
-    { id: 'text', label: 'Text', icon: Type },
-    { id: 'rectangle', label: 'Rectangle', icon: Square },
-    { id: 'circle', label: 'Circle', icon: Circle },
-    { id: 'line', label: 'Line', icon: Minus },
+    { id: "select", label: "Select", icon: Edit3 },
+    { id: "text", label: "Text", icon: Type },
+    { id: "rectangle", label: "Rectangle", icon: Square },
+    { id: "circle", label: "Circle", icon: Circle },
+    { id: "line", label: "Line", icon: Minus },
   ];
 
   return (
@@ -343,7 +379,8 @@ export default function BrowserPdfEditor() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900">PDF Editor</h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Upload a PDF and add text, shapes, and annotations directly in your browser.
+            Upload a PDF and add text, shapes, and annotations directly in your
+            browser.
           </p>
         </div>
 
@@ -375,7 +412,11 @@ export default function BrowserPdfEditor() {
                   disabled={isLoading || !pdfjsLib}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
                 >
-                  {isLoading ? 'Loading...' : !pdfjsLib ? 'Initializing...' : 'Choose PDF File'}
+                  {isLoading
+                    ? "Loading..."
+                    : !pdfjsLib
+                    ? "Initializing..."
+                    : "Choose PDF File"}
                 </Button>
               </div>
             </CardContent>
@@ -403,7 +444,9 @@ export default function BrowserPdfEditor() {
                       return (
                         <Button
                           key={tool.id}
-                          variant={selectedTool === tool.id ? "default" : "outline"}
+                          variant={
+                            selectedTool === tool.id ? "default" : "outline"
+                          }
                           size="sm"
                           onClick={() => setSelectedTool(tool.id)}
                           className="flex items-center gap-2"
@@ -418,7 +461,9 @@ export default function BrowserPdfEditor() {
 
                 {/* Color Picker */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Color</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Color
+                  </label>
                   <input
                     type="color"
                     value={currentColor}
@@ -477,7 +522,7 @@ export default function BrowserPdfEditor() {
                       <Redo className="h-4 w-4" />
                     </Button>
                   </div>
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
@@ -508,7 +553,9 @@ export default function BrowserPdfEditor() {
                       >
                         <ZoomOut className="h-4 w-4" />
                       </Button>
-                      <span className="text-sm font-medium">{Math.round(scale * 100)}%</span>
+                      <span className="text-sm font-medium">
+                        {Math.round(scale * 100)}%
+                      </span>
                       <Button
                         variant="outline"
                         size="sm"
@@ -546,7 +593,7 @@ export default function BrowserPdfEditor() {
                     <canvas
                       ref={canvasRef}
                       className="block"
-                      style={{ maxWidth: '100%', height: 'auto' }}
+                      style={{ maxWidth: "100%", height: "auto" }}
                     />
                     <canvas
                       ref={overlayCanvasRef}
@@ -554,7 +601,7 @@ export default function BrowserPdfEditor() {
                       onMouseDown={handleMouseDown}
                       onMouseMove={handleMouseMove}
                       onMouseUp={handleMouseUp}
-                      style={{ maxWidth: '100%', height: 'auto' }}
+                      style={{ maxWidth: "100%", height: "auto" }}
                     />
                   </div>
                 </CardContent>

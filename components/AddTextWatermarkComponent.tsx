@@ -1,133 +1,158 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Download, Eye, Settings, FileText, CheckCircle, RefreshCw, Type, Copy, RotateCcw, Upload, ArrowLeft } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import {
+  Download,
+  Eye,
+  RefreshCw,
+  ArrowLeft,
+  Type,
+  Palette,
+  Move,
+  Layers,
+  RotateCcw,
+  Upload,
+  FileText,
+  Settings,
+  CheckCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { pdfTrackers } from "@/lib/pdfTracking";
 
 interface AddTextWatermarkProps {
-  files: File[]
-  onProcess: (options: any) => Promise<void>
-  processing: boolean
-  onBack: () => void
+  files: File[];
+  onProcess: (options: any) => Promise<void>;
+  processing: boolean;
+  onBack: () => void;
 }
 
-export default function AddTextWatermarkComponent({ 
-  files, 
-  onProcess, 
-  processing, 
-  onBack 
+export default function AddTextWatermarkComponent({
+  files,
+  onProcess,
+  processing,
+  onBack,
 }: AddTextWatermarkProps) {
   const [options, setOptions] = useState({
-    text: 'CONFIDENTIAL',
-    fontColor: '#666666',
-    fontFamily: 'Helvetica',
+    text: "CONFIDENTIAL",
+    fontColor: "#666666",
+    fontFamily: "Helvetica",
     fontSize: 48,
     opacity: 0.15,
-    watermarkType: 'tilted', // 'tilted' or 'fullpage'
-  })
+    watermarkType: "tilted", // 'tilted' or 'fullpage'
+  });
 
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [previewScale, setPreviewScale] = useState(1)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
-  const [previewLoading, setPreviewLoading] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [previewScale, setPreviewScale] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const watermarkStyles = [
     {
-      value: 'tilted',
-      label: 'Tilted Watermark',
-      description: 'Diagonal repeating pattern across the page',
-      icon: <RotateCcw className="w-4 h-4" />
-    }
-  ]
+      value: "tilted",
+      label: "Tilted Watermark",
+      description: "Diagonal repeating pattern across the page",
+      icon: <RotateCcw className="w-4 h-4" />,
+    },
+  ];
 
   // Load PDF preview and set total pages based on file
   useEffect(() => {
     if (files.length > 0) {
-      loadPdfPreview()
+      loadPdfPreview();
       // Estimate pages based on file size (rough approximation)
-      const fileSizeMB = files[0].size / (1024 * 1024)
-      const estimatedPages = Math.max(1, Math.round(fileSizeMB / 0.1)) // Roughly 100KB per page
-      setTotalPages(Math.min(estimatedPages, 50)) // Cap at 50 for demo
-      setCurrentPage(1)
+      const fileSizeMB = files[0].size / (1024 * 1024);
+      const estimatedPages = Math.max(1, Math.round(fileSizeMB / 0.1)); // Roughly 100KB per page
+      setTotalPages(Math.min(estimatedPages, 50)); // Cap at 50 for demo
+      setCurrentPage(1);
     } else {
-      setPdfPreviewUrl(null)
+      setPdfPreviewUrl(null);
     }
-    
+
     // Cleanup URL when component unmounts
     return () => {
       if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl)
+        URL.revokeObjectURL(pdfPreviewUrl);
       }
-    }
-  }, [files])
+    };
+  }, [files]);
 
   // Cleanup URL when preview URL changes
   useEffect(() => {
     return () => {
       if (pdfPreviewUrl) {
-        URL.revokeObjectURL(pdfPreviewUrl)
+        URL.revokeObjectURL(pdfPreviewUrl);
       }
-    }
-  }, [pdfPreviewUrl])
+    };
+  }, [pdfPreviewUrl]);
 
   const loadPdfPreview = async () => {
-    if (files.length === 0) return
-    
-    setPreviewLoading(true)
-    
+    if (files.length === 0) return;
+
+    setPreviewLoading(true);
+
     try {
-      const file = files[0]
+      const file = files[0];
       // Create a URL for the PDF file to embed in iframe
-      const url = URL.createObjectURL(file)
-      setPdfPreviewUrl(url)
+      const url = URL.createObjectURL(file);
+      setPdfPreviewUrl(url);
     } catch (error) {
-      console.error('Error creating PDF preview:', error)
+      console.error("Error creating PDF preview:", error);
     } finally {
-      setPreviewLoading(false)
+      setPreviewLoading(false);
     }
-  }
+  };
 
   // Navigation functions
   const goToPrevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1)
+      setCurrentPage(currentPage - 1);
     }
-  }
+  };
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1)
+      setCurrentPage(currentPage + 1);
     }
-  }
+  };
 
   const zoomIn = () => {
-    setPreviewScale(prev => Math.min(prev + 0.25, 2))
-  }
+    setPreviewScale((prev) => Math.min(prev + 0.25, 2));
+  };
 
   const zoomOut = () => {
-    setPreviewScale(prev => Math.max(prev - 0.25, 0.5))
-  }
+    setPreviewScale((prev) => Math.max(prev - 0.25, 0.5));
+  };
 
   const resetZoom = () => {
-    setPreviewScale(1)
-  }
+    setPreviewScale(1);
+  };
 
   const handleProcess = async () => {
     try {
-      await onProcess(options)
-      setShowSuccess(true)
-      setTimeout(() => setShowSuccess(false), 4000)
+      await onProcess(options);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 4000);
+
+      // Track the add watermark action
+      await pdfTrackers.addWatermark(files[0]);
     } catch (error) {
-      console.error('Error processing watermark:', error)
+      console.error("Error processing watermark:", error);
     }
-  }
+  };
 
   // Create watermark preview component
   const WatermarkPreview = () => {
@@ -144,16 +169,16 @@ export default function AddTextWatermarkComponent({
               opacity: options.opacity,
               left: `${(i % 3) * 40 - 20}%`,
               top: `${Math.floor(i / 3) * 60 + 20}%`,
-              whiteSpace: 'nowrap',
-              userSelect: 'none',
+              whiteSpace: "nowrap",
+              userSelect: "none",
             }}
           >
             {options.text}
           </div>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -172,10 +197,13 @@ export default function AddTextWatermarkComponent({
             <div className="p-2 bg-blue-100 rounded-lg">
               <Type className="w-6 h-6 text-blue-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">Add Text Watermark</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Add Text Watermark
+            </h1>
           </div>
           <p className="text-gray-600">
-            Add custom text watermarks to your PDF with professional styling options.
+            Add custom text watermarks to your PDF with professional styling
+            options.
           </p>
         </div>
 
@@ -238,20 +266,28 @@ export default function AddTextWatermarkComponent({
                       <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
                         <div className="text-center">
                           <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mb-2 mx-auto" />
-                          <p className="text-sm text-gray-500">Loading PDF preview...</p>
+                          <p className="text-sm text-gray-500">
+                            Loading PDF preview...
+                          </p>
                         </div>
                       </div>
                     ) : pdfPreviewUrl ? (
                       /* Real PDF Preview with Watermark Overlay */
-                      <div className="relative bg-white border shadow-sm rounded-lg overflow-hidden" 
-                           style={{ width: `${600 * previewScale}px`, maxWidth: '100%', margin: '0 auto' }}>
+                      <div
+                        className="relative bg-white border shadow-sm rounded-lg overflow-hidden"
+                        style={{
+                          width: `${600 * previewScale}px`,
+                          maxWidth: "100%",
+                          margin: "0 auto",
+                        }}
+                      >
                         <iframe
                           src={`${pdfPreviewUrl}#page=1&view=FitH`}
                           className="w-full border-0"
                           style={{ height: `${700 * previewScale}px` }}
                           title="PDF Preview with Watermark"
                         />
-                        
+
                         {/* Watermark Overlay */}
                         <WatermarkPreview />
 
@@ -262,29 +298,39 @@ export default function AddTextWatermarkComponent({
                       </div>
                     ) : (
                       /* Fallback preview */
-                      <div className="relative bg-white border shadow-sm rounded-lg overflow-hidden p-6"
-                           style={{ width: `${600 * previewScale}px`, height: `${700 * previewScale}px`, maxWidth: '100%', margin: '0 auto' }}>
+                      <div
+                        className="relative bg-white border shadow-sm rounded-lg overflow-hidden p-6"
+                        style={{
+                          width: `${600 * previewScale}px`,
+                          height: `${700 * previewScale}px`,
+                          maxWidth: "100%",
+                          margin: "0 auto",
+                        }}
+                      >
                         <div className="text-center mb-6">
                           <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
                             <FileText className="w-6 h-6 text-blue-600" />
                           </div>
                           <h1 className="text-lg font-bold text-gray-900 mb-1">
-                            {files[0].name.replace(/\.pdf$/i, '')}
+                            {files[0].name.replace(/\.pdf$/i, "")}
                           </h1>
                           <p className="text-sm text-gray-600">
                             PDF Document • Watermark Preview
                           </p>
                         </div>
-                        
+
                         <div className="space-y-4 text-xs">
                           <div className="bg-blue-50 p-3 rounded-lg">
-                            <h3 className="font-semibold text-blue-800 mb-2">🔖 Watermark Preview</h3>
+                            <h3 className="font-semibold text-blue-800 mb-2">
+                              🔖 Watermark Preview
+                            </h3>
                             <p className="text-blue-700">
-                              Your watermark will be applied diagonally across all pages of the PDF.
+                              Your watermark will be applied diagonally across
+                              all pages of the PDF.
                             </p>
                           </div>
                         </div>
-                        
+
                         {/* Watermark Overlay */}
                         <WatermarkPreview />
                       </div>
@@ -301,9 +347,12 @@ export default function AddTextWatermarkComponent({
                   <div className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-1" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 break-words break-all">{files[0].name}</p>
+                      <p className="font-medium text-gray-900 break-words break-all">
+                        {files[0].name}
+                      </p>
                       <p className="text-sm text-gray-500">
-                        {(files[0].size / 1024 / 1024).toFixed(2)} MB • Est. {totalPages} pages
+                        {(files[0].size / 1024 / 1024).toFixed(2)} MB • Est.{" "}
+                        {totalPages} pages
                       </p>
                     </div>
                   </div>
@@ -327,7 +376,9 @@ export default function AddTextWatermarkComponent({
                   {watermarkStyles.map((style) => (
                     <button
                       key={style.value}
-                      onClick={() => setOptions({ ...options, watermarkType: style.value })}
+                      onClick={() =>
+                        setOptions({ ...options, watermarkType: style.value })
+                      }
                       className={cn(
                         "p-4 border-2 rounded-lg text-left transition-all hover:shadow-md transform hover:scale-[1.02]",
                         options.watermarkType === style.value
@@ -336,27 +387,37 @@ export default function AddTextWatermarkComponent({
                       )}
                     >
                       <div className="flex items-start gap-3">
-                        <div className={cn(
-                          "p-2 rounded-lg transition-colors",
-                          options.watermarkType === style.value
-                            ? "bg-red-100 text-red-600"
-                            : "bg-gray-100 text-gray-600"
-                        )}>
+                        <div
+                          className={cn(
+                            "p-2 rounded-lg transition-colors",
+                            options.watermarkType === style.value
+                              ? "bg-red-100 text-red-600"
+                              : "bg-gray-100 text-gray-600"
+                          )}
+                        >
                           {style.icon}
                         </div>
                         <div>
-                          <h3 className={cn(
-                            "font-medium",
-                            options.watermarkType === style.value
-                              ? "text-red-900"
-                              : "text-gray-900"
-                          )}>{style.label}</h3>
-                          <p className={cn(
-                            "text-sm",
-                            options.watermarkType === style.value
-                              ? "text-red-600"
-                              : "text-gray-500"
-                          )}>{style.description}</p>
+                          <h3
+                            className={cn(
+                              "font-medium",
+                              options.watermarkType === style.value
+                                ? "text-red-900"
+                                : "text-gray-900"
+                            )}
+                          >
+                            {style.label}
+                          </h3>
+                          <p
+                            className={cn(
+                              "text-sm",
+                              options.watermarkType === style.value
+                                ? "text-red-600"
+                                : "text-gray-500"
+                            )}
+                          >
+                            {style.description}
+                          </p>
                         </div>
                       </div>
                     </button>
@@ -376,17 +437,22 @@ export default function AddTextWatermarkComponent({
                   <Input
                     id="watermark-text"
                     value={options.text}
-                    onChange={(e) => setOptions({ ...options, text: e.target.value })}
+                    onChange={(e) =>
+                      setOptions({ ...options, text: e.target.value })
+                    }
                     placeholder="Enter watermark text..."
                     className="font-medium"
                   />
-                  
-                  
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="font-family">Font Family</Label>
-                  <Select value={options.fontFamily} onValueChange={(value) => setOptions({ ...options, fontFamily: value })}>
+                  <Select
+                    value={options.fontFamily}
+                    onValueChange={(value) =>
+                      setOptions({ ...options, fontFamily: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -402,7 +468,12 @@ export default function AddTextWatermarkComponent({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="font-size">Font Size</Label>
-                    <Select value={options.fontSize.toString()} onValueChange={(value) => setOptions({ ...options, fontSize: parseInt(value) })}>
+                    <Select
+                      value={options.fontSize.toString()}
+                      onValueChange={(value) =>
+                        setOptions({ ...options, fontSize: parseInt(value) })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -418,7 +489,12 @@ export default function AddTextWatermarkComponent({
 
                   <div className="space-y-2">
                     <Label htmlFor="opacity">Opacity</Label>
-                    <Select value={options.opacity.toString()} onValueChange={(value) => setOptions({ ...options, opacity: parseFloat(value) })}>
+                    <Select
+                      value={options.opacity.toString()}
+                      onValueChange={(value) =>
+                        setOptions({ ...options, opacity: parseFloat(value) })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -440,12 +516,16 @@ export default function AddTextWatermarkComponent({
                       id="font-color"
                       type="color"
                       value={options.fontColor}
-                      onChange={(e) => setOptions({ ...options, fontColor: e.target.value })}
+                      onChange={(e) =>
+                        setOptions({ ...options, fontColor: e.target.value })
+                      }
                       className="w-16 h-10 p-1 border rounded"
                     />
                     <Input
                       value={options.fontColor}
-                      onChange={(e) => setOptions({ ...options, fontColor: e.target.value })}
+                      onChange={(e) =>
+                        setOptions({ ...options, fontColor: e.target.value })
+                      }
                       className="flex-1"
                       placeholder="#000000"
                     />
@@ -457,11 +537,13 @@ export default function AddTextWatermarkComponent({
             {/* Action Button */}
             <Button
               onClick={handleProcess}
-              disabled={processing || files.length === 0 || !options.text.trim()}
+              disabled={
+                processing || files.length === 0 || !options.text.trim()
+              }
               className={cn(
                 "w-full h-12 text-base font-medium transition-all transform hover:scale-[1.02] disabled:transform-none",
-                processing 
-                  ? "bg-blue-600 hover:bg-blue-700" 
+                processing
+                  ? "bg-blue-600 hover:bg-blue-700"
                   : showSuccess
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-red-600 hover:bg-red-700",
@@ -503,5 +585,5 @@ export default function AddTextWatermarkComponent({
         </div>
       </div>
     </div>
-  )
+  );
 }

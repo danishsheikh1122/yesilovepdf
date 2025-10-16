@@ -1,149 +1,179 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Upload, X, Check, Download, Plus, ArrowUpDown, Trash2, FileText, Loader2 } from 'lucide-react'
-import PdfGallery from './PdfGallery'
-import { cn } from '@/lib/utils'
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Upload,
+  X,
+  Check,
+  Download,
+  Plus,
+  ArrowUpDown,
+  Trash2,
+  FileText,
+  Loader2,
+} from "lucide-react";
+import PdfGallery from "./PdfGallery";
+import { cn } from "@/lib/utils";
+import { pdfTrackers } from "@/lib/pdfTracking";
 
 interface FileWithPages {
-  file: File
-  pageCount: number
-  excludedPages: number[]
+  file: File;
+  pageCount: number;
+  excludedPages: number[];
 }
 
 interface EnhancedMergeProps {
-  onMerge: (files: File[], excludedPages: number[]) => Promise<void>
-  processing: boolean
+  onMerge: (files: File[], excludedPages: number[]) => Promise<void>;
+  processing: boolean;
 }
 
-export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProps) {
-  const [files, setFiles] = useState<FileWithPages[]>([])
-  const [dragActive, setDragActive] = useState(false)
-  const [totalPages, setTotalPages] = useState(0)
-  const [loadingFiles, setLoadingFiles] = useState<string[]>([])
+export default function EnhancedMerge({
+  onMerge,
+  processing,
+}: EnhancedMergeProps) {
+  const [files, setFiles] = useState<FileWithPages[]>([]);
+  const [dragActive, setDragActive] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
+  const [loadingFiles, setLoadingFiles] = useState<string[]>([]);
 
   useEffect(() => {
-    const total = files.reduce((sum, file) => sum + (file.pageCount - file.excludedPages.length), 0)
-    setTotalPages(total)
-  }, [files])
+    const total = files.reduce(
+      (sum, file) => sum + (file.pageCount - file.excludedPages.length),
+      0
+    );
+    setTotalPages(total);
+  }, [files]);
 
   const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true)
-    } else if (e.type === 'dragleave') {
-      setDragActive(false)
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
     }
-  }
+  };
 
   const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setDragActive(false)
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      await handleFiles(Array.from(e.dataTransfer.files))
+      await handleFiles(Array.from(e.dataTransfer.files));
     }
-  }
+  };
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault()
+    e.preventDefault();
     if (e.target.files && e.target.files[0]) {
-      await handleFiles(Array.from(e.target.files))
+      await handleFiles(Array.from(e.target.files));
     }
-  }
+  };
 
   const handleFiles = async (newFiles: File[]) => {
-    const pdfFiles = newFiles.filter(file => file.type === 'application/pdf')
-    
+    const pdfFiles = newFiles.filter((file) => file.type === "application/pdf");
+
     for (const file of pdfFiles) {
-      if (files.some(f => f.file.name === file.name && f.file.size === file.size)) {
-        continue // Skip duplicates
+      if (
+        files.some(
+          (f) => f.file.name === file.name && f.file.size === file.size
+        )
+      ) {
+        continue; // Skip duplicates
       }
 
-      setLoadingFiles(prev => [...prev, file.name])
-      
+      setLoadingFiles((prev) => [...prev, file.name]);
+
       try {
-        const pageCount = await getPageCount(file)
-        setFiles(prev => [...prev, {
-          file,
-          pageCount,
-          excludedPages: []
-        }])
+        const pageCount = await getPageCount(file);
+        setFiles((prev) => [
+          ...prev,
+          {
+            file,
+            pageCount,
+            excludedPages: [],
+          },
+        ]);
       } catch (error) {
-        console.error('Error loading file:', error)
+        console.error("Error loading file:", error);
       } finally {
-        setLoadingFiles(prev => prev.filter(name => name !== file.name))
+        setLoadingFiles((prev) => prev.filter((name) => name !== file.name));
       }
     }
-  }
+  };
 
   const getPageCount = async (file: File): Promise<number> => {
-    const formData = new FormData()
-    formData.append('file', file)
+    const formData = new FormData();
+    formData.append("file", file);
 
-    const response = await fetch('/api/pdf-info', {
-      method: 'POST',
+    const response = await fetch("/api/pdf-info", {
+      method: "POST",
       body: formData,
-    })
+    });
 
     if (response.ok) {
-      const data = await response.json()
-      return data.pageCount
+      const data = await response.json();
+      return data.pageCount;
     }
-    throw new Error('Failed to get page count')
-  }
+    throw new Error("Failed to get page count");
+  };
 
   const handlePageSelection = (fileIndex: number, excludedPages: number[]) => {
-    setFiles(prev => prev.map((file, index) => 
-      index === fileIndex 
-        ? { ...file, excludedPages }
-        : file
-    ))
-  }
+    setFiles((prev) =>
+      prev.map((file, index) =>
+        index === fileIndex ? { ...file, excludedPages } : file
+      )
+    );
+  };
 
   const removeFile = (fileIndex: number) => {
-    setFiles(prev => prev.filter((_, index) => index !== fileIndex))
-  }
+    setFiles((prev) => prev.filter((_, index) => index !== fileIndex));
+  };
 
   const moveFile = (fromIndex: number, toIndex: number) => {
-    setFiles(prev => {
-      const newFiles = [...prev]
-      const [moved] = newFiles.splice(fromIndex, 1)
-      newFiles.splice(toIndex, 0, moved)
-      return newFiles
-    })
-  }
+    setFiles((prev) => {
+      const newFiles = [...prev];
+      const [moved] = newFiles.splice(fromIndex, 1);
+      newFiles.splice(toIndex, 0, moved);
+      return newFiles;
+    });
+  };
 
   const handleMerge = async () => {
     if (files.length < 2) {
-      alert('Please select at least 2 PDF files to merge')
-      return
+      alert("Please select at least 2 PDF files to merge");
+      return;
     }
 
     if (totalPages === 0) {
-      alert('No pages selected for merging')
-      return
+      alert("No pages selected for merging");
+      return;
     }
 
     // Calculate global excluded pages
-    const excludedPages: number[] = []
-    let globalIndex = 0
-    
-    files.forEach(fileData => {
+    const excludedPages: number[] = [];
+    let globalIndex = 0;
+
+    files.forEach((fileData) => {
       for (let i = 1; i <= fileData.pageCount; i++) {
         if (fileData.excludedPages.includes(i)) {
-          excludedPages.push(globalIndex)
+          excludedPages.push(globalIndex);
         }
-        globalIndex++
+        globalIndex++;
       }
-    })
+    });
 
-    await onMerge(files.map(f => f.file), excludedPages)
-  }
+    await onMerge(
+      files.map((f) => f.file),
+      excludedPages
+    );
+
+    // Track the merge action
+    await pdfTrackers.merge(files.map((f) => f.file));
+  };
 
   if (files.length === 0) {
     return (
@@ -152,8 +182,8 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
           <CardContent className="p-12">
             <div
               className={cn(
-                'flex flex-col items-center justify-center text-center space-y-4',
-                dragActive && 'scale-105'
+                "flex flex-col items-center justify-center text-center space-y-4",
+                dragActive && "scale-105"
               )}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -163,20 +193,23 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
                 <Upload className="w-10 h-10 text-red-600" />
               </div>
-              
+
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Select PDF files to merge
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  Combine PDFs in the order you want with the easiest PDF merger available.
+                  Combine PDFs in the order you want with the easiest PDF merger
+                  available.
                 </p>
               </div>
 
               <div className="flex flex-col items-center space-y-3">
-                <Button 
+                <Button
                   className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg"
-                  onClick={() => document.getElementById('file-upload')?.click()}
+                  onClick={() =>
+                    document.getElementById("file-upload")?.click()
+                  }
                 >
                   Select PDF files
                 </Button>
@@ -195,7 +228,7 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -210,7 +243,9 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
             </CardTitle>
             <Button
               variant="outline"
-              onClick={() => document.getElementById('file-upload-more')?.click()}
+              onClick={() =>
+                document.getElementById("file-upload-more")?.click()
+              }
               className="flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
@@ -218,9 +253,13 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
             </Button>
           </div>
           <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>{files.length} file{files.length !== 1 ? 's' : ''}</span>
+            <span>
+              {files.length} file{files.length !== 1 ? "s" : ""}
+            </span>
             <span>•</span>
-            <span>{totalPages} page{totalPages !== 1 ? 's' : ''} to merge</span>
+            <span>
+              {totalPages} page{totalPages !== 1 ? "s" : ""} to merge
+            </span>
           </div>
         </CardHeader>
       </Card>
@@ -236,13 +275,16 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
                     {index + 1}
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">{fileData.file.name}</h4>
+                    <h4 className="font-medium text-gray-900">
+                      {fileData.file.name}
+                    </h4>
                     <p className="text-sm text-gray-500">
-                      {fileData.pageCount} pages • {(fileData.file.size / 1024 / 1024).toFixed(1)} MB
+                      {fileData.pageCount} pages •{" "}
+                      {(fileData.file.size / 1024 / 1024).toFixed(1)} MB
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   {index > 0 && (
                     <Button
@@ -275,11 +317,13 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
                 </div>
               </div>
             </CardHeader>
-            
+
             <CardContent className="pt-0">
               <PdfGallery
                 file={fileData.file}
-                onPagesSelected={(excludedPages) => handlePageSelection(index, excludedPages)}
+                onPagesSelected={(excludedPages) =>
+                  handlePageSelection(index, excludedPages)
+                }
                 selectionMode="exclude"
                 selectedPages={fileData.excludedPages}
                 className="border-0 shadow-none bg-transparent"
@@ -296,7 +340,7 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
             <div className="flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
               <span className="text-sm text-gray-600">
-                Loading {loadingFiles.join(', ')}...
+                Loading {loadingFiles.join(", ")}...
               </span>
             </div>
           </CardContent>
@@ -308,7 +352,8 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              Ready to merge {totalPages} page{totalPages !== 1 ? 's' : ''} from {files.length} file{files.length !== 1 ? 's' : ''}
+              Ready to merge {totalPages} page{totalPages !== 1 ? "s" : ""} from{" "}
+              {files.length} file{files.length !== 1 ? "s" : ""}
             </div>
             <Button
               onClick={handleMerge}
@@ -342,5 +387,5 @@ export default function EnhancedMerge({ onMerge, processing }: EnhancedMergeProp
 
       {/* Rest of component continues... */}
     </div>
-  )
+  );
 }

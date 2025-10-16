@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress'
 import { Globe, Download, Loader2, Eye, X, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { logPdfUsage } from '@/lib/pdfTracking'
 
 interface HtmlToPdfProps {
   className?: string
@@ -164,6 +165,12 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
       link.click()
       window.URL.revokeObjectURL(downloadUrl)
       document.body.removeChild(link)
+
+      // Track the HTML to PDF conversion
+      await logPdfUsage({
+        pdfName: filename,
+        actionType: 'html-to-pdf'
+      });
 
     } catch (err: any) {
       setError(err.message || 'Failed to convert webpage to PDF')

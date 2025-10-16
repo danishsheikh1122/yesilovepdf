@@ -4,6 +4,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Upload, Type, Square, Circle, Minus, Edit3, Undo, Redo, ZoomIn, ZoomOut, Download, Save } from 'lucide-react';
+import { pdfTrackers } from '@/lib/pdfTracking';
 
 // Dynamically import PDF.js only in browser environment
 let pdfjsLib: any = null;
@@ -229,8 +230,15 @@ export default function PdfEditor() {
   }, [history, historyIndex]);
 
   // Save/Download functionality
-  const saveEditedPdf = useCallback(() => {
+  const saveEditedPdf = useCallback(async () => {
     if (!canvasRef.current || !overlayCanvasRef.current) return;
+    
+    try {
+      // Track the PDF edit action
+      await pdfTrackers.edit(pdfFile || 'uploaded-pdf.pdf');
+    } catch (error) {
+      console.error('Failed to track PDF edit:', error);
+    }
     
     // Create a temporary canvas to combine PDF and overlay
     const tempCanvas = document.createElement('canvas');
@@ -251,7 +259,7 @@ export default function PdfEditor() {
     link.download = `edited-page-${currentPage}.png`;
     link.href = tempCanvas.toDataURL();
     link.click();
-  }, [currentPage]);
+  }, [currentPage, pdfFile]);
 
   // Effect to render page when dependencies change
   useEffect(() => {

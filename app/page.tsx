@@ -138,7 +138,7 @@ export default function HomePage() {
   const convertToPdfTools = [
     {
       id: "jpg-to-pdf",
-      title: "JPG to PDF",
+      title: "Image to PDF",
       description:
         "Convert multiple images into a single, organized PDF document",
       icon: <FileImage className="w-8 h-8 text-white" />,

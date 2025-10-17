@@ -216,7 +216,7 @@ export default function ImageOrganizer({
 
     onOrganize?.(operations, options);
 
-    // Track the JPG to PDF conversion
+    // Track the Image to PDF conversion
     await pdfTrackers.convertToJpg(organizedImages[0]?.file);
   };
 

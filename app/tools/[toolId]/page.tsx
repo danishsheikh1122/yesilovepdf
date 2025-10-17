@@ -118,7 +118,7 @@ const toolConfig: Record<string, any> = {
     minFiles: 1,
   },
   "jpg-to-pdf": {
-    title: "JPG to PDF",
+    title: "Image to PDF",
     description: "Convert images to PDF",
     acceptedTypes: [".jpg", ".jpeg", ".png", ".webp"],
     multiple: true,

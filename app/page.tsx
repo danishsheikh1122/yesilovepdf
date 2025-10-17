@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { useEffect, useRef } from "react";
 import {
   FileText,
   Merge,
@@ -34,24 +33,9 @@ import {
   Lock,
 } from "lucide-react";
 import ToolCard from "@/components/ToolCard";
-import SearchBar, { SearchBarRef } from "@/components/SearchBar";
 import TrustedByStats from "@/components/TrustedByStats";
 
 export default function HomePage() {
-  const searchBarRef = useRef<SearchBarRef>(null);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-        event.preventDefault();
-        searchBarRef.current?.toggle();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   const organizeTools = [
     {
       id: "merge",
@@ -250,7 +234,8 @@ export default function HomePage() {
     {
       id: "edit-pdf",
       title: "Edit PDF",
-      description: "Advanced PDF editor with text, shapes, annotations, and inline editing",
+      description:
+        "Advanced PDF editor with text, shapes, annotations, and inline editing",
       icon: <Edit className="w-8 h-8 text-white" />,
       gradient: "bg-gradient-to-br from-rose-400 to-rose-600",
       href: "/tools/edit-pdf",
@@ -284,11 +269,11 @@ export default function HomePage() {
         <div className="fixed top-40 right-20 w-24 h-24 bg-gradient-to-br from-red-200/30 to-red-300/20 rounded-full animate-float-delayed"></div>
         <div className="fixed bottom-40 left-20 w-40 h-40 bg-gradient-to-br from-purple-200/25 to-purple-300/15 rounded-full animate-float-reverse"></div>
         <div className="fixed bottom-20 right-40 w-28 h-28 bg-gradient-to-br from-green-200/30 to-green-300/20 rounded-full animate-float-fast"></div>
-        
+
         {/* Medium floating shapes */}
         <div className="fixed top-60 left-1/3 w-16 h-16 bg-gradient-to-br from-yellow-200/40 to-orange-300/25 rounded-full animate-float-medium"></div>
         <div className="fixed top-80 right-1/3 w-20 h-20 bg-gradient-to-br from-cyan-200/35 to-teal-300/20 rounded-full animate-float-slow-delayed"></div>
-        
+
         {/* Small decorative elements */}
         <div className="fixed top-32 left-1/2 w-12 h-12 bg-gradient-to-br from-pink-200/45 to-rose-300/30 rounded-full animate-float-tiny"></div>
         <div className="fixed bottom-60 left-1/4 w-14 h-14 bg-gradient-to-br from-indigo-200/40 to-blue-400/25 rounded-full animate-float-reverse-slow"></div>
@@ -300,7 +285,18 @@ export default function HomePage() {
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-red-500 rounded-2xl flex items-center justify-center mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-10 h-10 text-white">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-10 h-10 text-white"
+                >
                   <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
                 </svg>
               </div>
@@ -315,16 +311,11 @@ export default function HomePage() {
               The Complete PDF Solution for All Your Needs
             </p>
 
-            <p className="text-lg text-gray-500 mb-4 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
               Organize, optimize, convert, and edit your PDFs with our
               comprehensive toolkit. No sign-ups, no watermarks, just powerful
               PDF tools. ✨
             </p>
-
-            {/* Search Bar */}
-            <div className="mb-12 relative z-50">
-              <SearchBar ref={searchBarRef} />
-            </div>
 
             {/* Quick Features */}
             <div className="flex flex-wrap justify-center gap-8 mb-16">

@@ -130,12 +130,12 @@ const SearchBar = forwardRef<SearchBarRef>((props, ref) => {
     },
     {
       id: 'jpg-to-pdf',
-      title: 'JPG to PDF',
-      description: 'Convert JPG images to PDF format',
+      title: 'Image to PDF',
+      description: 'Convert images to PDF format',
       category: 'Convert',
       href: '/tools/jpg-to-pdf',
       icon: <FileText className="w-4 h-4" />,
-      keywords: ['jpg to pdf', 'jpeg to pdf', 'image to pdf', 'convert from jpg', 'photo to pdf'],
+      keywords: ['jpg to pdf', 'jpeg to pdf', 'image to pdf', 'convert from jpg', 'photo to pdf', 'png to pdf'],
     },
     // Convert Tools - Office
     {

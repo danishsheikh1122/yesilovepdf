@@ -1,3 +1,7 @@
+
+@import '@react-pdf-viewer/core/lib/styles/index.css';
+@import '@react-pdf-viewer/toolbar/lib/styles/index.css';
+@import '@react-pdf-viewer/highlight/lib/styles/index.css';
 @import "tailwindcss";
 
 @layer base {
@@ -54,5 +58,146 @@
   body {
     background-color: #ffffff;
     color: #111827;
+  }
+}
+
+/* PDF Viewer Styles */
+@import '@react-pdf-viewer/core/lib/styles/index.css';
+@import '@react-pdf-viewer/toolbar/lib/styles/index.css';
+@import '@react-pdf-viewer/highlight/lib/styles/index.css';
+
+/* Custom Scrollbar Styles */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(156 163 175) rgb(243 244 246);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgb(243 244 246);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgb(156 163 175);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgb(107 114 128);
+  }
+
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background: rgb(209 213 219);
+  }
+
+  .scrollbar-track-gray-100::-webkit-scrollbar-track {
+    background: rgb(243 244 246);
+  }
+}
+
+/* Floating Animation Keyframes */
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  33% {
+    transform: translateY(-15px) translateX(5px);
+  }
+  66% {
+    transform: translateY(5px) translateX(-10px);
+  }
+}
+
+@keyframes float-medium {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) translateX(8px) rotate(5deg);
+  }
+}
+
+@keyframes float-fast {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  25% {
+    transform: translateY(-10px) translateX(-5px);
+  }
+  75% {
+    transform: translateY(8px) translateX(7px);
+  }
+}
+
+@keyframes float-delayed {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  40% {
+    transform: translateY(-12px) translateX(6px) scale(1.05);
+  }
+  80% {
+    transform: translateY(6px) translateX(-8px) scale(0.95);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+  }
+  33% {
+    transform: translateY(10px) translateX(-7px);
+  }
+  66% {
+    transform: translateY(-8px) translateX(12px);
+  }
+}
+
+@keyframes float-tiny {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) translateX(4px) rotate(10deg);
+  }
+}
+
+/* Animation Classes */
+@layer utilities {
+  .animate-float-slow {
+    animation: float-slow 8s ease-in-out infinite;
+  }
+  
+  .animate-float-medium {
+    animation: float-medium 6s ease-in-out infinite;
+  }
+  
+  .animate-float-fast {
+    animation: float-fast 4s ease-in-out infinite;
+  }
+  
+  .animate-float-delayed {
+    animation: float-delayed 7s ease-in-out infinite 1s;
+  }
+  
+  .animate-float-reverse {
+    animation: float-reverse 9s ease-in-out infinite;
+  }
+  
+  .animate-float-slow-delayed {
+    animation: float-slow 10s ease-in-out infinite 2s;
+  }
+  
+  .animate-float-reverse-slow {
+    animation: float-reverse 12s ease-in-out infinite 1.5s;
+  }
+  
+  .animate-float-tiny {
+    animation: float-tiny 5s ease-in-out infinite 0.5s;
   }
 }

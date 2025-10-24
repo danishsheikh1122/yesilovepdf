@@ -2,23 +2,16 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import GlobalSearch from "./GlobalSearch";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const tools = [
-    { name: "Merge PDF", href: "/tools/merge", description: "Combine multiple PDFs" },
-    { name: "Split PDF", href: "/tools/split", description: "Split PDF into multiple files" },
+  const quickTools = [
     { name: "Compress PDF", href: "/tools/compress", description: "Reduce PDF file size" },
-    { name: "PDF to JPG", href: "/tools/pdf-to-jpg", description: "Convert PDF to images" },
-    { name: "JPG to PDF", href: "/tools/jpg-to-pdf", description: "Convert images to PDF" },
-    { name: "Organize PDF", href: "/tools/organize", description: "Reorder and organize pages" },
-    { name: "Edit PDF", href: "/tools/edit", description: "Edit PDF content" },
-    { name: "Sign PDF", href: "/tools/sign", description: "Add digital signatures" },
-    { name: "Protect PDF", href: "/tools/protect", description: "Add password protection" },
-    { name: "Unlock PDF", href: "/tools/unlock", description: "Remove password protection" },
-    { name: "Rotate PDF", href: "/tools/rotate", description: "Rotate PDF pages" },
-    { name: "Watermark", href: "/tools/watermark", description: "Add watermarks to PDF" },
+    { name: "Merge PDF", href: "/tools/merge", description: "Combine multiple PDFs" },
+    { name: "Image to PDF", href: "/tools/jpg-to-pdf", description: "Convert images to PDF" },
+    { name: "Remove Pages", href: "/tools/remove-pages", description: "Remove pages from PDF" },
   ];
 
   return (
@@ -41,9 +34,11 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
+            <GlobalSearch />
+            
             <div className="relative group">
               <button className="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium flex items-center">
-                All Tools
+                Quick Tools
                 <svg className="ml-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -53,7 +48,7 @@ const Navigation = () => {
               <div className="absolute left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                 <div className="p-4">
                   <div className="grid grid-cols-2 gap-2">
-                    {tools.map((tool) => (
+                    {quickTools.map((tool) => (
                       <Link
                         key={tool.name}
                         href={tool.href}
@@ -80,7 +75,8 @@ const Navigation = () => {
           </div>
 
           {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="md:hidden flex items-center space-x-2">
+            <GlobalSearch />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="text-gray-700 hover:text-gray-900 p-2"
@@ -100,7 +96,7 @@ const Navigation = () => {
         {isMenuOpen && (
           <div className="md:hidden border-t border-gray-200 py-4">
             <div className="space-y-2">
-              {tools.map((tool) => (
+              {quickTools.map((tool) => (
                 <Link
                   key={tool.name}
                   href={tool.href}

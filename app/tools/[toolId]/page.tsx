@@ -118,7 +118,7 @@ const toolConfig: Record<string, any> = {
     minFiles: 1,
   },
   "jpg-to-pdf": {
-    title: "JPG to PDF",
+    title: "Image to PDF",
     description: "Convert images to PDF",
     acceptedTypes: [".jpg", ".jpeg", ".png", ".webp"],
     multiple: true,
@@ -241,6 +241,11 @@ export default function ToolPage() {
 
   const tool = toolConfig[toolId];
 
+  // Scroll to top when component mounts or toolId changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [toolId]);
+
   // Drag and drop handlers
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -309,12 +314,12 @@ export default function ToolPage() {
         <div className="container mx-auto py-8">
           <div className="mb-6">
             <Button
-              variant="outline"
+              variant="ghost"
               onClick={() => router.push("/")}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Home
+              Back
             </Button>
           </div>
           <div className="bg-white rounded-lg shadow-sm">
@@ -905,8 +910,8 @@ export default function ToolPage() {
               onClick={() => router.push("/")}
               className="text-gray-600 hover:text-gray-900"
             >
-              <ArrowLeft className="w-5 h-5 mr-2" />
-              Back to Tools
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </Button>
             <div>
               <h1 className="text-xl font-bold text-gray-900">{tool.title}</h1>

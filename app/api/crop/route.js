@@ -2,6 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 
 export async function POST(request) {
+  // Helper function to calculate crop coordinates with different scaling
+  function scaleCropCoordinates(cropCoords, originalSize, targetSize) {
+    const scaleX = targetSize.width / originalSize.width;
+    const scaleY = targetSize.height / originalSize.height;
+    
+    return {
+      x: cropCoords.x * scaleX,
+      y: cropCoords.y * scaleY,
+      width: cropCoords.width * scaleX,
+      height: cropCoords.height * scaleY
+    };
+  }
+
   try {
     const formData = await request.formData();
     const file = formData.get('file');
@@ -72,17 +85,4 @@ export async function POST(request) {
       { status: 500 }
     );
   }
-}
-
-// Helper function to calculate crop coordinates with different scaling
-export function scaleCropCoordinates(cropCoords, originalSize, targetSize) {
-  const scaleX = targetSize.width / originalSize.width;
-  const scaleY = targetSize.height / originalSize.height;
-  
-  return {
-    x: cropCoords.x * scaleX,
-    y: cropCoords.y * scaleY,
-    width: cropCoords.width * scaleX,
-    height: cropCoords.height * scaleY
-  };
-}
+}``

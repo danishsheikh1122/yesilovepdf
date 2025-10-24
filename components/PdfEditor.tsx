@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { SketchPicker } from "react-color";
+import { pdfTrackers } from "@/lib/pdfTracking";
 import { 
   Type, 
   Square, 
@@ -65,6 +66,11 @@ export default function PdfEditor({ pdfUrl = "/sample.pdf" }: PdfEditorProps) {
       if (overlay) {
         overlay.height = viewport.height;
         overlay.width = viewport.width;
+      }
+      
+      if (!context) {
+        console.error('Canvas context is null');
+        return;
       }
       
       const renderContext = {
@@ -214,10 +220,17 @@ export default function PdfEditor({ pdfUrl = "/sample.pdf" }: PdfEditorProps) {
     setScale(prev => Math.max(prev - 0.2, 0.5));
   };
 
-  const saveAnnotatedPdf = () => {
+  const saveAnnotatedPdf = async () => {
     const canvas = canvasRef.current;
     const overlay = overlayRef.current;
     if (!canvas || !overlay) return;
+    
+    try {
+      // Track the PDF edit action
+      await pdfTrackers.edit(pdfUrl);
+    } catch (error) {
+      console.error('Failed to track PDF edit:', error);
+    }
     
     // Create a new canvas to combine both layers
     const combinedCanvas = document.createElement('canvas');

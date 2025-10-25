@@ -5,6 +5,7 @@ import os from "os";
 import archiver from "archiver";
 import { existsSync } from "fs";
 import { PDFDocument } from "pdf-lib";
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {

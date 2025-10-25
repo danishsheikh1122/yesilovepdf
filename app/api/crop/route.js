@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   // Helper function to calculate crop coordinates with different scaling
@@ -68,15 +69,37 @@ export async function POST(request) {
     // Generate the cropped PDF
     const pdfBytes = await pdfDoc.save();
     
+    // Generate filename
+    const originalName = file.name || 'document.pdf';
+    const nameWithoutExt = originalName.replace(/\.pdf$/i, '');
+    const newFilename = `${nameWithoutExt}_cropped.pdf`;
+
+    // Try uploading to Supabase
+    const uploadResult = await uploadToSupabaseIfEligible(
+      pdfBytes,
+      newFilename,
+      originalName
+    );
+    
     // Create response with the cropped PDF
-    return new NextResponse(pdfBytes, {
+    const response = new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': 'attachment; filename="cropped.pdf"',
+        'Content-Disposition': `attachment; filename="${newFilename}"`,
         'Content-Length': pdfBytes.length.toString(),
       },
     });
+
+    // Add Supabase upload info to response headers if successful
+    if (uploadResult.uploaded && uploadResult.publicUrl) {
+      response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+      response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+    } else if (uploadResult.error) {
+      response.headers.set('X-Upload-Warning', uploadResult.error);
+    }
+
+    return response;
 
   } catch (error) {
     console.error('Error cropping PDF:', error);

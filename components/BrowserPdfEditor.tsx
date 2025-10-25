@@ -63,10 +63,10 @@ export default function BrowserPdfEditor() {
     const initPdfJs = async () => {
       if (typeof window !== "undefined") {
         try {
-          const pdfjs = await import("pdfjs-dist");
+          const { loadPDFJS } = await import("@/lib/pdfjs-cdn");
+          const pdfjs = await loadPDFJS();
 
-          // Configure worker
-          pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+          // Worker is already configured in loadPDFJS
           setPdfjsLib(pdfjs);
         } catch (error) {
           console.error("Failed to load PDF.js:", error);

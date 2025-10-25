@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist/webpack';
+import { PDFDocumentProxy, loadPDFJS } from '@/lib/pdfjs-cdn';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ThumbnailNavigationPanelProps {
-  pdfDoc: pdfjsLib.PDFDocumentProxy | null;
+  pdfDoc: PDFDocumentProxy | null;
   currentPage: number;
   onPageChange: (page: number) => void;
   scale?: number;

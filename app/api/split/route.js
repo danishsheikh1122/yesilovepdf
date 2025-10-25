@@ -5,6 +5,7 @@ import path from 'path';
 import os from 'os';
 import { createReadStream } from 'fs';
 import archiver from 'archiver';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -116,6 +117,13 @@ export async function POST(request) {
       // Read ZIP file and return it
       const zipBuffer = await (await import('fs')).promises.readFile(zipPath);
 
+      // Try uploading to Supabase (but with special content type for ZIP)
+      const uploadResult = await uploadToSupabaseIfEligible(
+        zipBuffer,
+        'split-pages.zip',
+        file.name
+      );
+
       // Clean up temp files
       for (const temp of tempPaths) {
         try {
@@ -131,13 +139,23 @@ export async function POST(request) {
         console.warn('Failed to delete zip file:', zipPath, unlinkError);
       }
 
-      return new Response(zipBuffer, {
+      const response = new Response(zipBuffer, {
         headers: {
           'Content-Type': 'application/zip',
           'Content-Disposition': 'attachment; filename="split-pages.zip"',
           'Content-Length': zipBuffer.length.toString(),
         },
       });
+
+      // Add Supabase upload info to response headers if successful
+      if (uploadResult.uploaded && uploadResult.publicUrl) {
+        response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+        response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+      } else if (uploadResult.error) {
+        response.headers.set('X-Upload-Warning', uploadResult.error);
+      }
+
+      return response;
 
     } catch (processingError) {
       // Clean up temp files in case of error

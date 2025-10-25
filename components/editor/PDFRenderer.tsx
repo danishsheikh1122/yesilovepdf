@@ -26,7 +26,8 @@ export const PDFRenderer: React.FC<PDFRendererProps> = ({ className }) => {
     const initPdfjs = async () => {
       if (typeof window !== 'undefined') {
         try {
-          const pdfjsLib = await import('pdfjs-dist');
+          const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+          const pdfjsLib = await loadPDFJS();
           pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
           return pdfjsLib;
         } catch (error) {

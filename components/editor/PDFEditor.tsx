@@ -38,7 +38,8 @@ export const PDFEditor: React.FC<PDFEditorProps> = ({ className }) => {
       setError(null);
 
       // Dynamic import to avoid SSR issues
-      const pdfjsLib = await import('pdfjs-dist');
+      const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+      const pdfjsLib = await loadPDFJS();
       
       // Ensure worker is configured
       if (typeof window !== 'undefined') {

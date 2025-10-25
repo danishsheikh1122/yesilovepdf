@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb', // Increase from default 1mb to 50mb for large files
@@ -103,4 +102,4 @@ const nextConfig: NextConfig = {
   transpilePackages: ['pdfjs-dist'],
 };
 
-export default nextConfig;
+module.exports = nextConfig;

@@ -50,8 +50,8 @@ const ComprehensivePDFEditor: React.FC<ComprehensivePDFEditorProps> = ({ classNa
   const initPdfjs = useCallback(async () => {
     if (typeof window !== 'undefined') {
       try {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+        const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+        const pdfjsLib = await loadPDFJS();
         return pdfjsLib;
       } catch (error) {
         console.error('Failed to load PDF.js:', error);

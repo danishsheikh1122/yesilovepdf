@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -50,7 +51,14 @@ export async function POST(request) {
       const typePrefix = conversionType === 'screenshot' ? 'screenshot' : 'text';
       const filename = `${domain}-${typePrefix}-${Date.now()}.pdf`;
 
-      return new NextResponse(pdfBuffer, {
+      // Try uploading to Supabase
+      const uploadResult = await uploadToSupabaseIfEligible(
+        pdfBuffer,
+        filename,
+        `webpage-${domain}`
+      );
+
+      const response = new NextResponse(pdfBuffer, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
@@ -58,6 +66,16 @@ export async function POST(request) {
           'Content-Length': pdfBuffer.length.toString(),
         },
       });
+
+      // Add Supabase upload info to response headers if successful
+      if (uploadResult.uploaded && uploadResult.publicUrl) {
+        response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+        response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+      } else if (uploadResult.error) {
+        response.headers.set('X-Upload-Warning', uploadResult.error);
+      }
+
+      return response;
 
     } catch (processingError) {
       console.error('Error processing URL:', processingError);
@@ -80,8 +98,15 @@ export async function POST(request) {
             const urlObj = new URL(url);
             const domain = urlObj.hostname.replace('www.', '');
             const filename = `${domain}-fallback-${Date.now()}.pdf`;
+
+            // Try uploading to Supabase
+            const uploadResult = await uploadToSupabaseIfEligible(
+              fallbackPdfBuffer,
+              filename,
+              `webpage-${domain}-fallback`
+            );
             
-            return new NextResponse(fallbackPdfBuffer, {
+            const response = new NextResponse(fallbackPdfBuffer, {
               status: 200,
               headers: {
                 'Content-Type': 'application/pdf',
@@ -90,6 +115,16 @@ export async function POST(request) {
                 'X-Fallback-Method': 'text-extraction'
               },
             });
+
+            // Add Supabase upload info to response headers if successful
+            if (uploadResult.uploaded && uploadResult.publicUrl) {
+              response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+              response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+            } else if (uploadResult.error) {
+              response.headers.set('X-Upload-Warning', uploadResult.error);
+            }
+
+            return response;
           }
         } catch (fallbackError) {
           console.error('Fallback method also failed:', fallbackError);

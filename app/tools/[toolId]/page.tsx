@@ -32,6 +32,7 @@ import ImageOrganizer from "@/components/ImageOrganizer";
 import SimplePdfEditor from "@/components/SimplePdfEditor";
 import AddPageNumbersComponent from "@/components/AddPageNumbersComponent";
 import dynamic from "next/dynamic";
+import SupabaseUploadStatus, { useSupabaseUploadInfo } from "@/components/SupabaseUploadStatus";
 
 // Dynamic import to prevent SSR issues with PDF.js
 const AddTextWatermarkComponent = dynamic(
@@ -238,6 +239,7 @@ export default function ToolPage() {
     filename: string;
   } | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [lastResponse, setLastResponse] = useState<Response | null>(null);
 
   const tool = toolConfig[toolId];
 
@@ -431,6 +433,9 @@ export default function ToolPage() {
           console.error('❌ Frontend: Error data:', errorData);
           throw new Error(errorData.error || `Failed to process ${tool.title}`);
         }
+
+        // Store the response for Supabase upload info
+        setLastResponse(response);
 
         setProgress(80);
 
@@ -818,6 +823,14 @@ export default function ToolPage() {
             <p className="text-gray-600 mb-6">
               Your {tool.title.toLowerCase()} has been completed successfully!
             </p>
+
+            {/* Supabase Upload Status */}
+            <SupabaseUploadStatus
+              {...useSupabaseUploadInfo(lastResponse)}
+              fileName={selectedFiles[0]?.name}
+              className="mb-6"
+              showDirectDownload={false}
+            />
 
             {/* Show compression results if it's a compression tool */}
             {toolId === 'compress' && compressionResult && (

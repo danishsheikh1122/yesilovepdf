@@ -456,9 +456,8 @@ export default function ToolPage() {
               />
             ) : toolId === "organize" ? (
               <PdfOrganizer
-                files={selectedFiles}
+                file={selectedFiles[0]}
                 onOrganize={(operations) => handleProcess({ operations })}
-                onFilesChange={setSelectedFiles}
               />
             ) : toolId === "scan-to-pdf" ? (
               <ImageOrganizer
@@ -471,13 +470,15 @@ export default function ToolPage() {
               <AddPageNumbersComponent
                 files={selectedFiles}
                 onProcess={handleProcess}
-                onFilesChange={setSelectedFiles}
+                processing={processing}
+                onBack={() => setSelectedFiles([])}
               />
             ) : toolId === "add-watermark" ? (
               <AddTextWatermarkComponent
                 files={selectedFiles}
                 onProcess={handleProcess}
-                onFilesChange={setSelectedFiles}
+                processing={processing}
+                onBack={() => setSelectedFiles([])}
               />
             ) : (
               /* Default File List and Processing */

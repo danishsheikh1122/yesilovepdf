@@ -3,6 +3,7 @@ const { compress } = require("compress-pdf");
 import { writeFile, unlink } from "fs/promises";
 import path from "path";
 import os from "os";
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export const config = {
   api: {
@@ -119,7 +120,14 @@ export async function POST(request) {
         100
       ).toFixed(1);
 
-      return new Response(compressedBuffer, {
+      // Try uploading to Supabase
+      const uploadResult = await uploadToSupabaseIfEligible(
+        compressedBuffer,
+        `compressed-${file.name}`,
+        file.name
+      );
+
+      const response = new Response(compressedBuffer, {
         headers: {
           "Content-Type": "application/pdf",
           "Content-Disposition": `attachment; filename="compressed-${file.name}"`,
@@ -129,6 +137,16 @@ export async function POST(request) {
           "X-Compression-Ratio": compressionRatio,
         },
       });
+
+      // Add Supabase upload info to response headers if successful
+      if (uploadResult.uploaded && uploadResult.publicUrl) {
+        response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+        response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+      } else if (uploadResult.error) {
+        response.headers.set('X-Upload-Warning', uploadResult.error);
+      }
+
+      return response;
     } catch (processingError) {
       // Clean up temporary file in case of error
       try {

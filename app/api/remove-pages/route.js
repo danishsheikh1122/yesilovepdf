@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -85,13 +86,35 @@ export async function POST(request) {
 
       const modifiedBytes = await newPdfDoc.save();
 
-      return new Response(modifiedBytes, {
+      // Generate filename
+      const originalName = file.name || 'document.pdf';
+      const nameWithoutExt = originalName.replace(/\.pdf$/i, '');
+      const newFilename = `removed-pages-${nameWithoutExt}.pdf`;
+
+      // Try uploading to Supabase
+      const uploadResult = await uploadToSupabaseIfEligible(
+        modifiedBytes,
+        newFilename,
+        originalName
+      );
+
+      const response = new Response(modifiedBytes, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="removed-pages-${file.name}"`,
+          'Content-Disposition': `attachment; filename="${newFilename}"`,
           'Content-Length': modifiedBytes.length.toString(),
         },
       });
+
+      // Add Supabase upload info to response headers if successful
+      if (uploadResult.uploaded && uploadResult.publicUrl) {
+        response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+        response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+      } else if (uploadResult.error) {
+        response.headers.set('X-Upload-Warning', uploadResult.error);
+      }
+
+      return response;
 
     } catch (processingError) {
       throw processingError;

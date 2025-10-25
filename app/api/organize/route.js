@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument, degrees } from 'pdf-lib';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -59,13 +60,35 @@ export async function POST(request) {
 
     const organizedBytes = await organizedPdf.save();
 
-    return new Response(organizedBytes, {
+    // Generate filename
+    const originalName = file.name || 'document.pdf';
+    const nameWithoutExt = originalName.replace(/\.pdf$/i, '');
+    const newFilename = `organized-${nameWithoutExt}.pdf`;
+
+    // Try uploading to Supabase
+    const uploadResult = await uploadToSupabaseIfEligible(
+      organizedBytes,
+      newFilename,
+      originalName
+    );
+
+    const response = new Response(organizedBytes, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="organized-${file.name}"`,
+        'Content-Disposition': `attachment; filename="${newFilename}"`,
         'Content-Length': organizedBytes.length.toString(),
       },
     });
+
+    // Add Supabase upload info to response headers if successful
+    if (uploadResult.uploaded && uploadResult.publicUrl) {
+      response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+      response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+    } else if (uploadResult.error) {
+      response.headers.set('X-Upload-Warning', uploadResult.error);
+    }
+
+    return response;
 
   } catch (error) {
     console.error('Organize API error:', error);

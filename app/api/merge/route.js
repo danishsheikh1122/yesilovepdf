@@ -4,6 +4,7 @@ import { PDFDocument } from 'pdf-lib';
 import { writeFile, unlink } from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -63,13 +64,30 @@ export async function POST(request) {
 
         const mergedBytes = await finalDoc.save();
 
-        return new Response(mergedBytes, {
+        // Try uploading to Supabase
+        const uploadResult = await uploadToSupabaseIfEligible(
+          mergedBytes,
+          'merged-document.pdf',
+          'merged-document.pdf'
+        );
+
+        const response = new Response(mergedBytes, {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'attachment; filename="merged-document.pdf"',
             'Content-Length': mergedBytes.length.toString(),
           },
         });
+
+        // Add Supabase upload info to response headers if successful
+        if (uploadResult.uploaded && uploadResult.publicUrl) {
+          response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+          response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+        } else if (uploadResult.error) {
+          response.headers.set('X-Upload-Warning', uploadResult.error);
+        }
+
+        return response;
       } else {
         // Use the faster pdf-merger-js for simple merging without exclusions
         const merger = new PDFMerger();
@@ -91,6 +109,13 @@ export async function POST(request) {
         // Read merged file and return it
         const mergedBuffer = await (await import('fs')).promises.readFile(mergedPath);
 
+        // Try uploading to Supabase
+        const uploadResult = await uploadToSupabaseIfEligible(
+          mergedBuffer,
+          'merged-document.pdf',
+          'merged-document.pdf'
+        );
+
         // Clean up temp files
         for (const temp of tempPaths) {
           try {
@@ -106,13 +131,23 @@ export async function POST(request) {
           console.warn('Failed to delete merged temp file:', mergedPath, unlinkError);
         }
 
-        return new Response(mergedBuffer, {
+        const response = new Response(mergedBuffer, {
           headers: {
             'Content-Type': 'application/pdf',
             'Content-Disposition': 'attachment; filename="merged-document.pdf"',
             'Content-Length': mergedBuffer.length.toString(),
           },
         });
+
+        // Add Supabase upload info to response headers if successful
+        if (uploadResult.uploaded && uploadResult.publicUrl) {
+          response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+          response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+        } else if (uploadResult.error) {
+          response.headers.set('X-Upload-Warning', uploadResult.error);
+        }
+
+        return response;
       }
     } catch (processingError) {
       // Clean up temp files in case of error

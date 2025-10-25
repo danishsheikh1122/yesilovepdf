@@ -1,6 +1,5 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb', // Increase from default 1mb to 50mb for large files
@@ -19,6 +18,14 @@ const nextConfig: NextConfig = {
         path: false,
         url: false,
         'pdfjs-dist/build/pdf.worker.js': false,
+      };
+
+      // More aggressive canvas exclusion - prevent any canvas imports
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'canvas': false,
+        'canvas/lib/bindings': false,
+        '../build/Release/canvas.node': false,
       };
 
       // Use null-loader to ignore canvas completely
@@ -95,4 +102,4 @@ const nextConfig: NextConfig = {
   transpilePackages: ['pdfjs-dist'],
 };
 
-export default nextConfig;
+module.exports = nextConfig;

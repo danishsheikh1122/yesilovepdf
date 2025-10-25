@@ -21,7 +21,8 @@ let pdfjsLib: any = null;
 const initPdfjs = async () => {
   if (typeof window !== "undefined" && !pdfjsLib) {
     try {
-      pdfjsLib = await import("pdfjs-dist");
+      const { loadPDFJS } = await import("@/lib/pdfjs-cdn");
+      pdfjsLib = await loadPDFJS();
       pdfjsLib.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
     } catch (error) {
       console.error("Failed to load PDF.js:", error);

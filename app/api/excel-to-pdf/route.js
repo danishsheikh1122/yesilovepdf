@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -220,8 +221,15 @@ export async function POST(request) {
     // Create filename
     const originalName = file.name.replace(/\.(xlsx|xls)$/i, '');
     const filename = `${originalName}-converted-${Date.now()}.pdf`;
+
+    // Try uploading to Supabase
+    const uploadResult = await uploadToSupabaseIfEligible(
+      pdfBytes,
+      filename,
+      file.name
+    );
     
-    return new NextResponse(pdfBytes, {
+    const response = new NextResponse(pdfBytes, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -229,6 +237,16 @@ export async function POST(request) {
         'Content-Length': pdfBytes.length.toString(),
       },
     });
+
+    // Add Supabase upload info to response headers if successful
+    if (uploadResult.uploaded && uploadResult.publicUrl) {
+      response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+      response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+    } else if (uploadResult.error) {
+      response.headers.set('X-Upload-Warning', uploadResult.error);
+    }
+
+    return response;
     
   } catch (error) {
     console.error('❌ Excel to PDF conversion error:', error);

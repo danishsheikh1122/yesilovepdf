@@ -5,6 +5,7 @@ import { Card, CardContent } from './ui/card';
 import { Upload, Download, FileText, Zap, Eye, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { pdfTrackers } from '@/lib/pdfTracking';
+import SupabaseUploadStatus, { useSupabaseUploadInfo } from '@/components/SupabaseUploadStatus';
 
 interface CompressionLevel {
   value: string;
@@ -45,6 +46,7 @@ export default function PdfCompressor() {
   } | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [compressedBlob, setCompressedBlob] = useState<Blob | null>(null);
+  const [lastResponse, setLastResponse] = useState<Response | null>(null);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -90,6 +92,9 @@ export default function PdfCompressor() {
         const error = await response.json();
         throw new Error(error.error || 'Compression failed');
       }
+
+      // Store the response for Supabase upload info
+      setLastResponse(response);
 
       // Get compression stats from headers
       const originalSize = parseInt(response.headers.get('X-Original-Size') || '0');
@@ -208,6 +213,13 @@ export default function PdfCompressor() {
               </CardContent>
             </Card>
           )}
+
+          {/* Supabase Upload Status */}
+          <SupabaseUploadStatus
+            {...useSupabaseUploadInfo(lastResponse)}
+            fileName={file?.name}
+            onDirectDownload={handleDownload}
+          />
 
           {/* PDF Preview */}
           <Card>

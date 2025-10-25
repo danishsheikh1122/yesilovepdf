@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -106,13 +107,33 @@ export async function POST(request) {
 
       const pdfBytes = await pdfDoc.save();
 
-      return new Response(pdfBytes, {
+      // Generate filename
+      const filename = 'images-to-pdf.pdf';
+
+      // Try uploading to Supabase
+      const uploadResult = await uploadToSupabaseIfEligible(
+        pdfBytes,
+        filename,
+        `${files.length}-images-converted`
+      );
+
+      const response = new Response(pdfBytes, {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': 'attachment; filename="images-to-pdf.pdf"',
+          'Content-Disposition': `attachment; filename="${filename}"`,
           'Content-Length': pdfBytes.length.toString(),
         },
       });
+
+      // Add Supabase upload info to response headers if successful
+      if (uploadResult.uploaded && uploadResult.publicUrl) {
+        response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+        response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+      } else if (uploadResult.error) {
+        response.headers.set('X-Upload-Warning', uploadResult.error);
+      }
+
+      return response;
 
     } catch (processingError) {
       throw processingError;

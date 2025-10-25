@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   try {
@@ -163,13 +164,30 @@ export async function POST(request) {
     const nameWithoutExt = originalName.replace(/\.pdf$/i, '');
     const newFilename = `${nameWithoutExt}_with_page_numbers.pdf`;
 
-    return new Response(modifiedPdfBytes, {
+    // Try uploading to Supabase
+    const uploadResult = await uploadToSupabaseIfEligible(
+      modifiedPdfBytes,
+      newFilename,
+      originalName
+    );
+
+    const response = new Response(modifiedPdfBytes, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${newFilename}"`,
         'Content-Length': modifiedPdfBytes.length.toString(),
       },
     });
+
+    // Add Supabase upload info to response headers if successful
+    if (uploadResult.uploaded && uploadResult.publicUrl) {
+      response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+      response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+    } else if (uploadResult.error) {
+      response.headers.set('X-Upload-Warning', uploadResult.error);
+    }
+
+    return response;
 
   } catch (error) {
     console.error('❌ Add page numbers error:', error);

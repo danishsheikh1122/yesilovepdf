@@ -42,7 +42,8 @@ export default function PdfEditor({ pdfUrl = "/sample.pdf" }: PdfEditorProps) {
   // PDF.js dynamic import to avoid SSR issues
   const loadPdf = useCallback(async (url: string) => {
     try {
-      const pdfjs = await import('pdfjs-dist/build/pdf');
+      const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+      const pdfjs = await loadPDFJS();
       
       // Set worker path
       pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';

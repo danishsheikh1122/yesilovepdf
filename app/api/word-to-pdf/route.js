@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import mammoth from 'mammoth';
 import puppeteer from 'puppeteer';
+import { uploadToSupabaseIfEligible } from '@/lib/supabaseFileUpload';
 
 export async function POST(request) {
   let browser = null;
@@ -140,13 +141,30 @@ export async function POST(request) {
     const originalName = file.name.replace(/\.(doc|docx)$/i, '');
     const filename = `${originalName}_converted.pdf`;
 
-    return new Response(pdfBuffer, {
+    // Try uploading to Supabase
+    const uploadResult = await uploadToSupabaseIfEligible(
+      pdfBuffer,
+      filename,
+      file.name
+    );
+
+    const response = new Response(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,
         'Content-Length': pdfBuffer.length.toString(),
       },
     });
+
+    // Add Supabase upload info to response headers if successful
+    if (uploadResult.uploaded && uploadResult.publicUrl) {
+      response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+      response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+    } else if (uploadResult.error) {
+      response.headers.set('X-Upload-Warning', uploadResult.error);
+    }
+
+    return response;
 
   } catch (error) {
     console.error('❌ Word to PDF conversion error:', error);

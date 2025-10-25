@@ -10,10 +10,10 @@ import { pdfTrackers } from '@/lib/pdfTracking';
 let pdfjsLib: any = null;
 
 if (typeof window !== 'undefined') {
-  import('pdfjs-dist').then((pdfjs) => {
-    pdfjsLib = pdfjs;
-    // Configure PDF.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+  import('@/lib/pdfjs-cdn').then(({ loadPDFJS }) => {
+    loadPDFJS().then((pdfjs) => {
+      pdfjsLib = pdfjs;
+    });
   });
 }
 
@@ -63,9 +63,8 @@ export default function PdfEditor() {
     try {
       // Ensure PDF.js is loaded
       if (!pdfjsLib) {
-        const pdfjs = await import('pdfjs-dist');
-        pdfjsLib = pdfjs;
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+        const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+        pdfjsLib = await loadPDFJS();
       }
 
       const arrayBuffer = await file.arrayBuffer();

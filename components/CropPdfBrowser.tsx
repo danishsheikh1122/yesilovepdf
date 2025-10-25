@@ -39,14 +39,10 @@ export default function CropPdfBrowser() {
   // Dynamically load PDF.js only in browser
   useEffect(() => {
     if (typeof window !== 'undefined' && !pdfjsLoaded) {
-      const script = document.createElement('script');
-      script.src = '/pdf.worker.min.js';
-      script.onload = async () => {
+      const loadPdfJs = async () => {
         try {
-          // @ts-ignore - Dynamic import
-          const pdfjs = await import('pdfjs-dist/webpack');
-          // @ts-ignore
-          pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
+          const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+          await loadPDFJS();
           setPdfjsLoaded(true);
         } catch (error) {
           console.warn('Failed to load PDF.js:', error);
@@ -54,7 +50,8 @@ export default function CropPdfBrowser() {
           setPdfjsLoaded(true);
         }
       };
-      document.head.appendChild(script);
+      
+      loadPdfJs();
     }
   }, [pdfjsLoaded]);
 
@@ -70,8 +67,8 @@ export default function CropPdfBrowser() {
       if (pdfjsLoaded && typeof window !== 'undefined') {
         // Try to load PDF.js in browser
         try {
-          // @ts-ignore
-          const pdfjs = await import('pdfjs-dist/webpack');
+          const { loadPDFJS } = await import('@/lib/pdfjs-cdn');
+          const pdfjs = await loadPDFJS();
           const arrayBuffer = await file.arrayBuffer();
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           

@@ -281,7 +281,7 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <div className="relative overflow-visible z-10">
-        <div className="max-w-7xl mx-auto px-6 py-12 sm:py-16">
+        <div className="w-full px-6 py-12 sm:py-16">
           <div className="text-center">
             <div className="flex items-center justify-center mb-6">
               <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-red-500 rounded-2xl flex items-center justify-center mr-4">
@@ -346,7 +346,7 @@ export default function HomePage() {
       </div>
 
       {/* Tools Sections */}
-      <div className="max-w-7xl mx-auto px-6 pb-24 space-y-20 mt-12">
+      <div className="w-full px-6 pb-24 space-y-20 mt-12">
         {/* Organize PDF Section */}
         <section className="pt-8">
           <div className="text-center mb-12">
@@ -495,7 +495,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-6 text-center">
+        <div className="w-full px-6 text-center">
           <div className="flex items-center justify-center mb-6">
             <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-red-500 rounded-xl flex items-center justify-center">
               <svg

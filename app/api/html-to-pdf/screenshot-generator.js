@@ -7,8 +7,32 @@ export async function generateScreenshotPdf(url, options = {}) {
   try {
     console.log('🚀 Starting SCREENSHOT PDF generation for:', url);
     
-    // Launch Puppeteer browser
-    browser = await puppeteer.launch({
+    // Try to find Chrome executable paths for different OS
+    const findChrome = () => {
+      const { platform } = process;
+      
+      if (platform === 'win32') {
+        // Windows paths
+        return [
+          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+          process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+        ];
+      } else if (platform === 'darwin') {
+        // macOS paths
+        return ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'];
+      } else {
+        // Linux paths
+        return [
+          '/usr/bin/google-chrome',
+          '/usr/bin/google-chrome-stable',
+          '/usr/bin/chromium-browser',
+          '/usr/bin/chromium',
+        ];
+      }
+    };
+
+    let launchOptions = {
       headless: true,
       args: [
         '--no-sandbox',
@@ -20,7 +44,37 @@ export async function generateScreenshotPdf(url, options = {}) {
         '--single-process',
         '--disable-gpu'
       ]
-    });
+    };
+
+    // Try to launch with default puppeteer Chrome
+    try {
+      browser = await puppeteer.launch(launchOptions);
+    } catch (defaultError) {
+      console.log('⚠️ Default Chrome not found, trying system Chrome...');
+      
+      // Try to find system Chrome
+      const chromePaths = findChrome();
+      let foundChrome = false;
+      
+      for (const chromePath of chromePaths) {
+        try {
+          const fs = await import('fs');
+          if (fs.existsSync(chromePath)) {
+            console.log(`✅ Found Chrome at: ${chromePath}`);
+            launchOptions.executablePath = chromePath;
+            browser = await puppeteer.launch(launchOptions);
+            foundChrome = true;
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
+      }
+      
+      if (!foundChrome) {
+        throw new Error('Chrome browser not found. Screenshot feature requires Chrome to be installed. Please install Google Chrome or use the text extraction method instead.');
+      }
+    }
 
     console.log('✅ Browser launched');
 

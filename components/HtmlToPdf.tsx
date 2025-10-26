@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Globe, Download, Loader2, Eye, X, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logPdfUsage } from '@/lib/pdfTracking'
+import SupabaseUploadStatus from '@/components/SupabaseUploadStatus'
 
 interface HtmlToPdfProps {
   className?: string
@@ -31,9 +32,14 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
   const [isValidating, setIsValidating] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showOptions, setShowOptions] = useState(false)
+  const [showResult, setShowResult] = useState(false)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState('')
   const [validationResult, setValidationResult] = useState<any>(null)
+  const [uploadUrl, setUploadUrl] = useState<string | undefined>(undefined)
+  const [uploadError, setUploadError] = useState<string | undefined>(undefined)
+  const [fileSize, setFileSize] = useState<number | undefined>(undefined)
+  const [fileName, setFileName] = useState<string>('webpage.pdf')
   const iframeRef = useRef<HTMLIFrameElement>(null)
 
   const [options, setOptions] = useState<ConversionOptions>({
@@ -112,19 +118,21 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
     setIsLoading(true)
     setProgress(0)
     setError('')
+    setUploadUrl(undefined)
+    setUploadError(undefined)
 
-    // Simulate progress
+    // Simulate progress with smooth increments
+    let progressValue = 0
     const progressInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(progressInterval)
-          return 90
-        }
-        return prev + Math.random() * 10
-      })
+      progressValue += 2
+      if (progressValue <= 60) {
+        setProgress(progressValue)
+      }
     }, 300)
 
     try {
+      setProgress(10)
+      
       const response = await fetch('/api/html-to-pdf', {
         method: 'POST',
         headers: {
@@ -137,20 +145,21 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
       })
 
       clearInterval(progressInterval)
-      setProgress(100)
+      setProgress(75)
 
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Conversion failed')
       }
 
-      // Download the PDF
-      const blob = await response.blob()
-      const downloadUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = downloadUrl
+      setProgress(85)
+
+      // Extract Supabase upload info from headers
+      const supabaseUrl = response.headers.get('X-Supabase-Url')
+      const uploadWarning = response.headers.get('X-Upload-Warning')
+      const fileSizeHeader = response.headers.get('X-File-Size')
       
-      // Extract filename from response headers or create one
+      // Extract filename from response headers
       const contentDisposition = response.headers.get('content-disposition')
       let filename = 'webpage.pdf'
       if (contentDisposition) {
@@ -160,11 +169,32 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
         }
       }
       
+      setFileName(filename)
+      
+      if (supabaseUrl) {
+        setUploadUrl(supabaseUrl)
+      }
+      if (uploadWarning) {
+        setUploadError(uploadWarning)
+      }
+      if (fileSizeHeader) {
+        setFileSize(parseInt(fileSizeHeader))
+      }
+
+      setProgress(93)
+
+      // Download the PDF
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
       link.download = filename
       document.body.appendChild(link)
       link.click()
       window.URL.revokeObjectURL(downloadUrl)
       document.body.removeChild(link)
+
+      setProgress(100)
 
       // Track the HTML to PDF conversion
       await logPdfUsage({
@@ -172,11 +202,18 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
         actionType: 'html-to-pdf'
       });
 
+      // Small delay to ensure download starts, then show result screen
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Show result screen with Supabase upload info
+      setIsLoading(false)
+      setShowResult(true)
+      setShowPreview(false)
+
     } catch (err: any) {
       setError(err.message || 'Failed to convert webpage to PDF')
       clearInterval(progressInterval)
       setProgress(0)
-    } finally {
       setIsLoading(false)
     }
   }
@@ -186,9 +223,44 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
     setInputUrl('') // Reset input URL as well
     setShowPreview(false)
     setShowOptions(false)
+    setShowResult(false)
     setError('')
     setValidationResult(null)
     setProgress(0)
+    setUploadUrl(undefined)
+    setUploadError(undefined)
+    setFileSize(undefined)
+    setFileName('webpage.pdf')
+  }
+
+  // Show result screen after conversion
+  if (showResult) {
+    return (
+      <div className={cn("w-full max-w-4xl mx-auto", className)}>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Conversion Complete!</h2>
+          <p className="text-gray-600">Your webpage has been converted to PDF</p>
+        </div>
+
+        <SupabaseUploadStatus
+          uploadUrl={uploadUrl}
+          uploadError={uploadError}
+          fileSize={fileSize}
+          fileName={fileName}
+          showDirectDownload={false}
+        />
+
+        <div className="mt-6 text-center">
+          <Button 
+            onClick={resetForm}
+            variant="outline"
+            className="px-6"
+          >
+            Convert Another Webpage
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   if (showPreview) {
@@ -239,7 +311,7 @@ export default function HtmlToPdf({ className }: HtmlToPdfProps) {
         </div>
 
         {/* Conversion Type Quick Selection - Always Visible */}
-        <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50">
+        <Card className="mb-6 bg-linear-to-r from-blue-50 to-purple-50">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>

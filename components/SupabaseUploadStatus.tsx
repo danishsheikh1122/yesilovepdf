@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Download, AlertCircle, Cloud, QrCode, Copy, Smartphone } from 'lucide-react'
+import { CheckCircle, Download, AlertCircle, Copy, Home, Share2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface SupabaseUploadStatusProps {
   uploadUrl?: string | null
@@ -26,8 +27,9 @@ export default function SupabaseUploadStatus({
   onDirectDownload,
   showQRCode = true
 }: SupabaseUploadStatusProps) {
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [qrShared, setQrShared] = useState(false)
+  const qrRef = useRef<HTMLDivElement>(null)
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes'
@@ -37,61 +39,86 @@ export default function SupabaseUploadStatus({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (uploadUrl) {
-      navigator.clipboard.writeText(uploadUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      try {
+        await navigator.clipboard.writeText(uploadUrl)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } catch (err) {
+        console.error('Copy failed:', err)
+      }
     }
   }
 
-    // Generate QR code when uploadUrl is available
-  useEffect(() => {
-    if (!uploadUrl || !showQRCode) {
-      console.log('⏭️ Skipping QR generation:', { uploadUrl, showQRCode })
-      return
-    }
+  const shareQRCode = async () => {
+    if (!uploadUrl || !qrRef.current) return
 
-    console.log('🔄 Starting QR generation for URL:', uploadUrl)
-    console.log('🔍 URL type:', typeof uploadUrl)
-    console.log('🔍 URL length:', uploadUrl?.length)
+    try {
+      // Get the SVG element
+      const svg = qrRef.current.querySelector('svg')
+      if (!svg) return
 
-    const generateQR = async () => {
-      try {
-        console.log('📦 Loading QRCode library...')
+      // Convert SVG to canvas
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      const svgData = new XMLSerializer().serializeToString(svg)
+      const img = new Image()
+      
+      img.onload = async () => {
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.fillStyle = 'white'
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0)
         
-        // Dynamic import to ensure it works in the browser
-        const QRCode = await import('qrcode')
-        
-        console.log('✅ QRCode library loaded')
-        console.log('🎯 Generating QR for URL:', uploadUrl)
-        
-        // Use the toDataURL method with simpler config
-        const qrDataUrl = await QRCode.toDataURL(uploadUrl, {
-          errorCorrectionLevel: 'M',
-          width: 256,
-          margin: 1,
-          color: {
-            dark: '#1e40af',
-            light: '#ffffff'
+        // Convert to blob
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            const file = new File([blob], 'qr-code.png', { type: 'image/png' })
+            
+            // Check if Web Share API is supported
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+              try {
+                await navigator.share({
+                  title: 'Download QR Code',
+                  text: 'Scan this QR code to download your file',
+                  files: [file]
+                })
+                setQrShared(true)
+                setTimeout(() => setQrShared(false), 2000)
+              } catch (shareErr) {
+                // User cancelled or error - fallback to download
+                if ((shareErr as Error).name !== 'AbortError') {
+                  downloadQRCode(blob)
+                }
+              }
+            } else {
+              // Fallback: direct download
+              downloadQRCode(blob)
+            }
           }
         })
-        
-        console.log('✅ QR Code generated successfully')
-        console.log('📊 QR Data URL length:', qrDataUrl.length)
-        console.log('📊 QR Data starts with:', qrDataUrl.substring(0, 30))
-        setQrCodeDataUrl(qrDataUrl)
-      } catch (err) {
-        console.error('❌ QR generation error:', err)
-        console.error('❌ Error name:', (err as Error)?.name)
-        console.error('❌ Error message:', (err as Error)?.message)
-        console.error('❌ Error stack:', (err as Error)?.stack)
-        setQrCodeDataUrl('error')
       }
-    }
 
-    generateQR()
-  }, [uploadUrl, showQRCode])
+      img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)))
+    } catch (err) {
+      console.error('Share QR failed:', err)
+    }
+  }
+
+  const downloadQRCode = (blob: Blob) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'qr-code.png'
+    a.click()
+    URL.revokeObjectURL(url)
+    setQrShared(true)
+    setTimeout(() => setQrShared(false), 2000)
+  }
 
   // Don't render if no upload information is available
   if (!uploadUrl && !uploadError) {
@@ -99,124 +126,49 @@ export default function SupabaseUploadStatus({
   }
 
   return (
-    <div className={cn("w-full min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4 sm:p-6", className)}>
+    <div className={cn("w-full max-w-3xl mx-auto", className)}>
       {uploadUrl ? (
-        // Centered Card Layout - Premium & Minimal
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-200/50 backdrop-blur-sm">
-            
-            {/* Success Header Section */}
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-8 sm:p-10 text-center relative overflow-hidden">
-              {/* Background accent */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-              
-              <div className="relative z-10">
-                {/* Success Icon */}
-                <div className="flex justify-center mb-4">
-                  <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 shadow-lg">
-                    <CheckCircle className="w-12 h-12" strokeWidth={2} />
-                  </div>
+        <div className="space-y-4">
+          {/* Success Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {/* Success Header */}
+            <div className="bg-green-50 px-6 py-4 border-b border-green-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-white" />
                 </div>
-                
-                <h2 className="text-3xl sm:text-4xl font-bold mb-2">Your file is ready! 🎉</h2>
-                <p className="text-green-100 text-sm">Successfully processed and uploaded to cloud storage</p>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">File Ready!</h3>
+                  <p className="text-sm text-gray-600">
+                    {fileSize && `${formatFileSize(fileSize)} • `}Expires in 1 hour
+                  </p>
+                </div>
               </div>
             </div>
 
-            {/* Main Content - Single Column */}
-            <div className="p-6 sm:p-8 space-y-6">
-              
-              {/* File Info Card */}
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 border border-blue-200/50">
-                <div className="flex items-start gap-3">
-                  <div className="bg-blue-600/10 rounded-lg p-2.5 flex-shrink-0">
-                    <Cloud className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-gray-900 text-sm">Cloud Storage</h3>
-                    <div className="space-y-1 mt-2">
-                      <p className="text-xs text-gray-600">
-                        {fileSize ? `📦 Size: ${formatFileSize(fileSize)}` : '📦 File uploaded'}
-                      </p>
-                      <p className="text-xs text-orange-600 font-medium flex items-center gap-1">
-                        ⏰ Expires in 1 hour
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            {/* Main Content */}
+            <div className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Download Section */}
+                <div className="space-y-3">
+                  <Button
+                    onClick={() => window.open(uploadUrl, '_blank')}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white h-11"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download File
+                  </Button>
 
-              {/* Primary Download Button */}
-              <Button
-                onClick={() => window.open(uploadUrl, '_blank')}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Download from Cloud
-              </Button>
-
-              {/* Divider */}
-              <div className="relative py-2">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="px-3 text-xs font-medium text-gray-500 bg-white">or</span>
-                </div>
-              </div>
-
-              {/* QR Code Section */}
-              {showQRCode && (
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200/50">
-                    {/* QR Code Badge */}
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <div className="bg-blue-600 text-white rounded-full p-1">
-                        <QrCode className="w-4 h-4" />
-                      </div>
-                      <p className="text-sm font-semibold text-gray-900">Scan to download</p>
-                    </div>
-
-                    {/* QR Code Display - Proper sized */}
-                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                      {qrCodeDataUrl && qrCodeDataUrl !== 'error' ? (
-                        <img
-                          src={qrCodeDataUrl}
-                          alt="QR Code for download link"
-                          className="w-full h-auto"
-                        />
-                      ) : qrCodeDataUrl === 'error' ? (
-                        <div className="aspect-square flex flex-col items-center justify-center bg-red-50 rounded-lg">
-                          <AlertCircle className="w-10 h-10 text-red-500 mb-2" />
-                          <p className="text-xs text-red-700 font-medium text-center">QR generation failed</p>
-                          <p className="text-xs text-red-600 text-center mt-1">Please refresh the page</p>
-                        </div>
-                      ) : (
-                        <div className="aspect-square flex items-center justify-center bg-gray-50 rounded-lg">
-                          <div className="text-center">
-                            <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-200 border-t-blue-600 mx-auto mb-2"></div>
-                            <p className="text-xs text-gray-600 font-medium">Generating QR code...</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Instructions */}
-                    <p className="text-xs text-gray-600 text-center mt-3 px-2">
-                      📱 Open camera on your phone and point at the QR code
-                    </p>
-                  </div>
-
-                  {/* Copy Link Button */}
                   <Button
                     onClick={copyToClipboard}
                     variant="outline"
-                    className="w-full h-10 border-2 border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-700 font-medium rounded-xl transition-all"
+                    className="w-full h-11"
                   >
                     {copied ? (
                       <>
                         <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
-                        <span className="text-green-600">Copied!</span>
+                        Link Copied!
                       </>
                     ) : (
                       <>
@@ -225,64 +177,92 @@ export default function SupabaseUploadStatus({
                       </>
                     )}
                   </Button>
+
+                  <Button
+                    onClick={shareQRCode}
+                    variant="outline"
+                    className="w-full h-11"
+                  >
+                    {qrShared ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                        QR Code Saved!
+                      </>
+                    ) : (
+                      <>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share QR Code
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
 
-              {/* Secondary Actions */}
-              {showDirectDownload && onDirectDownload && (
-                <Button
-                  onClick={onDirectDownload}
-                  variant="outline"
-                  className="w-full h-10 border-2 border-gray-300 hover:border-green-500 hover:bg-green-50 text-gray-700 font-medium rounded-xl transition-all"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Direct Download
-                </Button>
-              )}
-
-              {/* Footer Info */}
-              <div className="pt-2 border-t border-gray-200">
-                <p className="text-xs text-gray-500 text-center">
-                  💡 Your file is temporarily stored. Download before the link expires.
-                </p>
+                {/* QR Code Section */}
+                {showQRCode && (
+                  <div className="flex flex-col items-center justify-center">
+                    <p className="text-sm text-gray-600 mb-3">Scan with phone</p>
+                    <div ref={qrRef} className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                      <QRCodeSVG
+                        value={uploadUrl}
+                        size={140}
+                        level="M"
+                        includeMargin={false}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Trust Badge */}
-          <p className="text-center text-xs text-gray-500 mt-4">
-            🔒 Secure • Private • No data stored
-          </p>
+          {/* Home Button */}
+          <Button
+            onClick={() => window.location.href = '/'}
+            variant="ghost"
+            className="w-full text-gray-600"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
         </div>
-        ) : uploadError ? (
-        // Error state
-        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 sm:p-8 flex items-center justify-center">
-          <div className="w-full max-w-2xl bg-white rounded-3xl p-8 shadow-2xl border border-gray-100">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 text-red-700">
-                <AlertCircle className="w-8 h-8" />
-                <span className="font-semibold text-lg">Upload unavailable</span>
+      ) : uploadError ? (
+        <div className="space-y-4">
+          {/* Error Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-red-200 overflow-hidden">
+            <div className="bg-red-50 px-6 py-4 border-b border-red-100">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Upload Failed</h3>
+                  <p className="text-sm text-red-700">{uploadError}</p>
+                </div>
               </div>
-              
-              <div className="text-sm text-gray-600">
-                <p>{uploadError}</p>
-              </div>
+            </div>
 
-              {showDirectDownload && onDirectDownload && (
+            {onDirectDownload && (
+              <div className="p-6">
                 <Button
                   onClick={onDirectDownload}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white h-12 font-semibold rounded-xl"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white h-11"
                 >
                   <Download className="w-5 h-5 mr-2" />
-                  Download File Directly
+                  Download File
                 </Button>
-              )}
-
-              <div className="text-sm text-gray-600 bg-amber-50 p-4 rounded-xl border border-amber-200">
-                ⚠️ File will be downloaded directly to your device
               </div>
-            </div>
+            )}
           </div>
+
+          {/* Home Button */}
+          <Button
+            onClick={() => window.location.href = '/'}
+            variant="outline"
+            className="w-full"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
         </div>
       ) : null}
     </div>

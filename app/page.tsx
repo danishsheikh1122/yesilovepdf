@@ -262,8 +262,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 relative overflow-hidden">
-      {/* Floating Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+      {/* Floating Background Elements - Hidden on mobile */}
+      <div className="hidden lg:block fixed inset-0 overflow-hidden pointer-events-none z-0">
         {/* Large floating circles */}
         <div className="fixed top-20 left-10 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-blue-300/20 rounded-full animate-float-slow"></div>
         <div className="fixed top-40 right-20 w-24 h-24 bg-gradient-to-br from-red-200/30 to-red-300/20 rounded-full animate-float-delayed"></div>
@@ -348,10 +348,10 @@ export default function HomePage() {
       {/* Tools Sections */}
       <div className="w-full px-6 pb-24 space-y-20 mt-12">
         {/* Organize PDF Section */}
-        <section className="pt-8">
+        <section className="pt-8" id="organize">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              📁 Organize PDF
+              Organize PDF
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Merge, split, and organize your PDF documents with precision
@@ -375,7 +375,7 @@ export default function HomePage() {
         <section>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              ⚡ Optimize PDF
+              Optimize PDF
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Compress, repair, and enhance your PDF files
@@ -399,7 +399,7 @@ export default function HomePage() {
         <section>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              📄 Convert to PDF
+              Convert to PDF
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Convert various file formats to PDF documents
@@ -423,7 +423,7 @@ export default function HomePage() {
         <section>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              🔄 Convert from PDF
+              Convert from PDF
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Extract and convert PDF content to other formats
@@ -447,7 +447,7 @@ export default function HomePage() {
         <section>
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              ✏️ Edit PDF
+              Edit PDF
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Modify and enhance your PDF documents
@@ -467,30 +467,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Call to Action */}
-        <div className="mt-20">
-          <Card className="bg-gradient-to-r from-blue-500 to-blue-600 border-0 text-white overflow-hidden relative">
-            <CardContent className="p-12 text-center relative z-10">
-              <h3 className="text-2xl font-bold mb-4">Ready to get started?</h3>
-              <p className="text-blue-100 mb-8 text-lg max-w-2xl mx-auto">
-                Choose any tool above to start working with your PDFs. All tools
-                are free and require no registration.
-              </p>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="bg-white text-blue-600 hover:bg-gray-50 font-semibold px-8 py-3"
-                asChild
-              >
-                <a href="#organize">Explore Tools →</a>
-              </Button>
-            </CardContent>
-
-            {/* Background decoration */}
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-32 translate-x-32"></div>
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
-          </Card>
-        </div>
       </div>
 
       {/* Footer */}

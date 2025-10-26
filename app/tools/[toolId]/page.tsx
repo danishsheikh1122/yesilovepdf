@@ -387,12 +387,17 @@ export default function ToolPage() {
     if (selectedFiles.length >= tool.minFiles) {
       setProcessing(true);
       setStatus("processing");
+      setProgress(0);
 
       try {
-        setProgress(20);
+        // Simulate initial progress
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setProgress(10);
 
         const formData = new FormData();
         selectedFiles.forEach((file) => formData.append("files", file));
+
+        setProgress(20);
 
         // Use overrideOptions (from child component) when provided, otherwise use local options
         const finalOptions = overrideOptions && Object.keys(overrideOptions).length > 0 ? overrideOptions : options;
@@ -416,28 +421,43 @@ export default function ToolPage() {
           );
         }
 
-        setProgress(40);
+        setProgress(30);
 
         console.log('🔄 Frontend: Starting API call to', `/api/${toolId}`);
+        
+        // Start simulated progress during API call
+        const progressInterval = setInterval(() => {
+          setProgress((prev) => {
+            if (prev < 60) return prev + 2;
+            return prev;
+          });
+        }, 300);
+
         const response = await fetch(`/api/${toolId}`, {
           method: "POST",
           body: formData,
         });
 
-        setProgress(60);
+        clearInterval(progressInterval);
+        setProgress(65);
         console.log('📡 Frontend: API response status:', response.status);
 
         if (!response.ok) {
           console.error('❌ Frontend: API response not ok:', response.status);
-          const errorData = await response.json();
-          console.error('❌ Frontend: Error data:', errorData);
-          throw new Error(errorData.error || `Failed to process ${tool.title}`);
+          try {
+            const errorData = await response.json();
+            console.error('❌ Frontend: Error data:', errorData);
+            throw new Error(errorData.error || `Failed to process ${tool.title}`);
+          } catch (e) {
+            throw new Error(`Failed to process ${tool.title}`);
+          }
         }
 
         // Store the response for Supabase upload info
         setLastResponse(response);
 
-        setProgress(80);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setProgress(75);
 
         // Handle compression tool differently - it returns JSON with compression stats
         if (toolId === 'compress') {
@@ -460,8 +480,13 @@ export default function ToolPage() {
         }
 
         // For other tools, handle as blob download
+        setProgress(85);
+        await new Promise(resolve => setTimeout(resolve, 100));
         const blob = await response.blob();
+        setProgress(93);
+        await new Promise(resolve => setTimeout(resolve, 100));
         const url = URL.createObjectURL(blob);
+        setProgress(97);
         const a = document.createElement("a");
         a.href = url;
 
@@ -562,36 +587,55 @@ export default function ToolPage() {
   ) => {
     setProcessing(true);
     setStatus("processing");
+    setProgress(0);
 
     try {
-      setProgress(20);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setProgress(10);
 
       const formData = new FormData();
       files.forEach((file) => formData.append("files", file));
+
+      setProgress(20);
 
       if (excludedPages.length > 0) {
         formData.append("excludedPages", excludedPages.join(","));
       }
 
-      setProgress(40);
+      setProgress(30);
+
+      // Start simulated progress during API call
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev < 60) return prev + 2;
+          return prev;
+        });
+      }, 300);
 
       const response = await fetch("/api/merge", {
         method: "POST",
         body: formData,
       });
 
-      setProgress(60);
+      clearInterval(progressInterval);
+      setProgress(65);
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to merge PDFs");
       }
 
-      setProgress(80);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setProgress(75);
 
       // Download the merged file
+      setProgress(85);
+      await new Promise(resolve => setTimeout(resolve, 100));
       const blob = await response.blob();
+      setProgress(93);
+      await new Promise(resolve => setTimeout(resolve, 100));
       const url = URL.createObjectURL(blob);
+      setProgress(97);
       const a = document.createElement("a");
       a.href = url;
       a.download = "merged-document.pdf";
@@ -711,33 +755,50 @@ export default function ToolPage() {
     
     setProcessing(true);
     setStatus("processing");
+    setProgress(0);
 
     try {
-      setProgress(20);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      setProgress(10);
 
       const formData = new FormData();
       formData.append("files", selectedFiles[0]); // Organize works with single file
       formData.append("pageOperations", JSON.stringify(operations));
 
-      setProgress(40);
+      setProgress(30);
+
+      // Start simulated progress during API call
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev < 60) return prev + 2;
+          return prev;
+        });
+      }, 300);
 
       const response = await fetch(`/api/organize`, {
         method: "POST",
         body: formData,
       });
 
-      setProgress(60);
+      clearInterval(progressInterval);
+      setProgress(65);
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to organize PDF");
       }
 
-      setProgress(80);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setProgress(75);
 
       // Download the organized file
+      setProgress(85);
+      await new Promise(resolve => setTimeout(resolve, 100));
       const blob = await response.blob();
+      setProgress(93);
+      await new Promise(resolve => setTimeout(resolve, 100));
       const url = URL.createObjectURL(blob);
+      setProgress(97);
       const a = document.createElement("a");
       a.href = url;
       
@@ -776,138 +837,134 @@ export default function ToolPage() {
 
   if (status === "processing") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-xl">
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
-              <div className="w-8 h-8 bg-blue-500 rounded-full animate-bounce"></div>
-            </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <Card className="border-0 shadow-lg">
+            <CardContent className="p-8">
+              {/* Progress Ring */}
+              <div className="flex flex-col items-center mb-8">
+                <div className="relative w-32 h-32 mb-6">
+                  <svg className="w-full h-full transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#E5E7EB"
+                      strokeWidth="8"
+                      fill="none"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#10B981"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - progress / 100)}`}
+                      strokeLinecap="round"
+                      className="transition-all duration-500"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-3xl font-bold text-gray-900">{progress}%</span>
+                  </div>
+                </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Processing Your Files
-            </h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Processing {tool.title}
+                </h2>
+                <p className="text-sm text-gray-600 text-center">
+                  {progress < 30 && "Uploading files..."}
+                  {progress >= 30 && progress < 70 && "Processing your files..."}
+                  {progress >= 70 && progress < 100 && "Finalizing..."}
+                  {progress === 100 && "Complete!"}
+                </p>
+              </div>
 
-            <p className="text-gray-600 mb-6">
-              Please wait while we process your {tool.title.toLowerCase()}...
-            </p>
-
-            <div className="space-y-4">
-              <Progress value={progress} className="h-3" />
-              <p className="text-sm text-gray-500">{progress}% complete</p>
-            </div>
-
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600">
-                <strong>Files:</strong> {selectedFiles.length} file(s)
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+              {/* File Info */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Files</span>
+                  <span className="font-medium text-gray-900">{selectedFiles.length} file(s)</span>
+                </div>
+                {selectedFiles[0] && (
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-gray-600">Name</span>
+                    <span className="font-medium text-gray-900 truncate ml-4 max-w-[200px]">
+                      {selectedFiles[0].name}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   if (status === "complete") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-6">
-        <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm shadow-xl">
-          <CardContent className="p-8 text-center">
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-12 h-12 text-green-600" />
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="ghost"
+                onClick={() => router.push("/")}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back
+              </Button>
+              <div>
+                <h1 className="text-lg font-semibold text-gray-900">{tool.title}</h1>
+                <p className="text-sm text-gray-600">Processing complete</p>
+              </div>
             </div>
+          </div>
+        </div>
 
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              Success! 🎉
-            </h2>
-
-            <p className="text-gray-600 mb-6">
-              Your {tool.title.toLowerCase()} has been completed successfully!
-            </p>
-
-            {/* Supabase Upload Status */}
-            <SupabaseUploadStatus
-              {...useSupabaseUploadInfo(lastResponse)}
-              fileName={selectedFiles[0]?.name}
-              className="mb-6"
-              showDirectDownload={false}
-            />
-
-            {/* Show compression results if it's a compression tool */}
-            {toolId === 'compress' && compressionResult && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold text-red-800 mb-4">Compression Results</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="text-center">
-                    <div className="text-gray-600">Original Size</div>
-                    <div className="text-xl font-bold text-gray-900">
+        {/* Main Content */}
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          {/* Compression Results */}
+          {toolId === 'compress' && compressionResult && (
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Compression Results</h3>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Original</div>
+                    <div className="text-2xl font-bold text-gray-900">
                       {formatFileSize(compressionResult.originalSize)}
                     </div>
                   </div>
-                  <div className="text-center">
-                    <div className="text-gray-600">Compressed Size</div>
-                    <div className="text-xl font-bold text-green-600">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Compressed</div>
+                    <div className="text-2xl font-bold text-green-600">
                       {formatFileSize(compressionResult.compressedSize)}
                     </div>
                   </div>
-                </div>
-                <div className="mt-4 p-3 bg-white rounded-lg">
-                  <div className="text-gray-600 text-sm">Compression Achieved</div>
-                  <div className="text-2xl font-bold text-red-600">
-                    {compressionResult.compressionRatio}% smaller
-                  </div>
-                  <div className="text-sm text-gray-500 mt-1">
-                    Saved {formatFileSize(compressionResult.originalSize - compressionResult.compressedSize)}
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Saved</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {compressionResult.compressionRatio}%
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              </CardContent>
+            </Card>
+          )}
 
-            <div className="space-y-3">
-              {toolId === 'compress' && compressionResult ? (
-                <Button 
-                  className="w-full bg-green-500 hover:bg-green-600 text-white"
-                  size="lg"
-                  onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = compressionResult.downloadUrl;
-                    a.download = compressionResult.filename;
-                    a.click();
-                  }}
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Download Compressed PDF
-                </Button>
-              ) : (
-                <Button
-                  className="w-full bg-green-500 hover:bg-green-600 text-white"
-                  size="lg"
-                >
-                  <Download className="w-5 h-5 mr-2" />
-                  Download Result
-                </Button>
-              )}
-
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={handleStartOver}
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Start Over
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => router.push("/")}
-                >
-                  <Home className="w-4 h-4 mr-2" />
-                  Home
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Download Section */}
+          <SupabaseUploadStatus
+            {...useSupabaseUploadInfo(lastResponse)}
+            fileName={selectedFiles[0]?.name}
+            showDirectDownload={false}
+          />
+        </div>
       </div>
     );
   }

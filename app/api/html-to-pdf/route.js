@@ -58,7 +58,7 @@ export async function POST(request) {
         `webpage-${domain}`
       );
 
-      const response = new NextResponse(pdfBuffer, {
+      const pdfResponse = new NextResponse(pdfBuffer, {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
@@ -69,13 +69,13 @@ export async function POST(request) {
 
       // Add Supabase upload info to response headers if successful
       if (uploadResult.uploaded && uploadResult.publicUrl) {
-        response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
-        response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+        pdfResponse.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+        pdfResponse.headers.set('X-File-Size', uploadResult.fileSize.toString());
       } else if (uploadResult.error) {
-        response.headers.set('X-Upload-Warning', uploadResult.error);
+        pdfResponse.headers.set('X-Upload-Warning', uploadResult.error);
       }
 
-      return response;
+      return pdfResponse;
 
     } catch (processingError) {
       console.error('Error processing URL:', processingError);
@@ -84,14 +84,14 @@ export async function POST(request) {
       if (conversionType === 'screenshot') {
         try {
           console.log('Screenshot method failed, falling back to text extraction...');
-          const response = await fetch(url, {
+          const fetchResponse = await fetch(url, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
           });
           
-          if (response.ok) {
-            const htmlContent = await response.text();
+          if (fetchResponse.ok) {
+            const htmlContent = await fetchResponse.text();
             const { generatePdfFromHtml } = await import('./pdf-generator');
             const fallbackPdfBuffer = await generatePdfFromHtml(htmlContent, url, options);
             
@@ -106,7 +106,7 @@ export async function POST(request) {
               `webpage-${domain}-fallback`
             );
             
-            const response = new NextResponse(fallbackPdfBuffer, {
+            const fallbackResponse = new NextResponse(fallbackPdfBuffer, {
               status: 200,
               headers: {
                 'Content-Type': 'application/pdf',
@@ -118,13 +118,13 @@ export async function POST(request) {
 
             // Add Supabase upload info to response headers if successful
             if (uploadResult.uploaded && uploadResult.publicUrl) {
-              response.headers.set('X-Supabase-Url', uploadResult.publicUrl);
-              response.headers.set('X-File-Size', uploadResult.fileSize.toString());
+              fallbackResponse.headers.set('X-Supabase-Url', uploadResult.publicUrl);
+              fallbackResponse.headers.set('X-File-Size', uploadResult.fileSize.toString());
             } else if (uploadResult.error) {
-              response.headers.set('X-Upload-Warning', uploadResult.error);
+              fallbackResponse.headers.set('X-Upload-Warning', uploadResult.error);
             }
 
-            return response;
+            return fallbackResponse;
           }
         } catch (fallbackError) {
           console.error('Fallback method also failed:', fallbackError);

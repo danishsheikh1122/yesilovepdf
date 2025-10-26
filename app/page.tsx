@@ -32,6 +32,7 @@ import {
   Zap,
   Lock,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import ToolCard from "@/components/ToolCard";
 import TrustedByStats from "@/components/TrustedByStats";
 
@@ -319,22 +320,38 @@ export default function HomePage() {
 
             {/* Quick Features */}
             <div className="flex flex-wrap justify-center gap-8 mb-16">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-full px-6 py-3 shadow-sm"
-                >
-                  {feature.icon}
-                  <div className="text-left">
-                    <p className="font-semibold text-gray-900 text-sm">
-                      {feature.title}
-                    </p>
-                    <p className="text-gray-600 text-xs">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              {features.map((feature, index) => {
+                // Animation variants: 0 = from left, 1 = from right, 2 = from bottom
+                const animationVariants = {
+                  0: { x: -100, opacity: 0 },
+                  1: { x: 100, opacity: 0 },
+                  2: { y: 100, opacity: 0 }
+                };
+                
+                return (
+                  <motion.div
+                    key={index}
+                    initial={animationVariants[index as keyof typeof animationVariants]}
+                    animate={{ x: 0, y: 0, opacity: 1 }}
+                    transition={{ 
+                      duration: 0.6, 
+                      delay: index * 0.2,
+                      ease: "easeOut"
+                    }}
+                    className="flex items-center space-x-3 bg-white/60 backdrop-blur-sm rounded-full px-6 py-3 shadow-sm"
+                  >
+                    {feature.icon}
+                    <div className="text-left">
+                      <p className="font-semibold text-gray-900 text-sm">
+                        {feature.title}
+                      </p>
+                      <p className="text-gray-600 text-xs">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
         </div>

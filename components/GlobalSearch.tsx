@@ -111,10 +111,20 @@ export default function GlobalSearch() {
         setOpen(v => !v);
       }
       if (open) {
-        if (e.key === "Escape") setOpen(false);
-        if (e.key === "ArrowDown") setHighlight(h => Math.min(h + 1, results.length - 1));
-        if (e.key === "ArrowUp") setHighlight(h => Math.max(h - 1, 0));
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setOpen(false);
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          setHighlight(h => Math.min(h + 1, results.length - 1));
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          setHighlight(h => Math.max(h - 1, 0));
+        }
         if (e.key === "Enter" && results[highlight]) {
+          e.preventDefault();
           saveRecent(query);
           setOpen(false);
           router.push(results[highlight].link);
@@ -171,30 +181,20 @@ export default function GlobalSearch() {
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
             >
               <button
-                className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition"
+                className="absolute top-4 right-4 sm:top-3 sm:right-3 text-gray-400 hover:text-gray-600 transition z-10 bg-white rounded-full p-1"
                 onClick={() => setOpen(false)}
                 aria-label="Close search"
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200">
-                <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 pr-10 sm:pr-8">
+                <Search className="w-5 h-5 text-gray-400 shrink-0" />
                 <input
                   ref={inputRef}
                   className="flex-1 bg-transparent outline-none text-base sm:text-lg placeholder-gray-400 text-gray-900"
                   placeholder="Search PDF tools... (Try 'merge', 'compress', 'convert')"
                   value={query}
                   onChange={e => setQuery(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === "ArrowDown") {
-                      e.preventDefault();
-                      setHighlight(h => Math.min(h + 1, results.length - 1));
-                    }
-                    if (e.key === "ArrowUp") {
-                      e.preventDefault();
-                      setHighlight(h => Math.max(h - 1, 0));
-                    }
-                  }}
                   autoFocus
                 />
                 <kbd className="hidden sm:inline-block ml-2 px-2 py-1 rounded bg-gray-100 text-xs font-mono text-gray-600">⌘ K</kbd>
@@ -243,7 +243,7 @@ export default function GlobalSearch() {
                         <div className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-1">{tool.description}</div>
                       </div>
                       {i === highlight && (
-                        <kbd className="hidden sm:inline-block px-2 py-1 rounded bg-gray-100 text-xs font-mono text-gray-600 flex-shrink-0">↵</kbd>
+                        <kbd className="hidden sm:inline-block px-2 py-1 rounded bg-gray-100 text-xs font-mono text-gray-600 shrink-0">↵</kbd>
                       )}
                     </li>
                   ))}
